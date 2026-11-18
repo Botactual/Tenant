@@ -1,0 +1,351 @@
+/* Report page styles. Loaded after dashstyling.css, which supplies the sidebar,
+   stat cards, status badges, unit chips, dropdown, table and button styles. */
+
+/* ---------- Page shell ---------- */
+.rep-main {
+    flex: 1;
+    min-width: 0;
+    height: calc(100vh - 32px);
+    margin: 16px 16px 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* ---------- Toolbar ---------- */
+.rep-toolbar {
+    position: relative;
+    z-index: 30;                                  /* period dropdown sits above the panel */
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+}
+
+.export-btn {
+    height: 46px;
+    padding: 0 34px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #000000;
+    background-color: #ffffff;
+    border: none;
+    border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    transition: filter 0.15s ease, transform 0.1s ease;
+}
+
+.export-btn:hover  { filter: brightness(0.94); }
+.export-btn:active { transform: scale(0.97); }
+.export-btn svg    { width: 18px; height: 18px; }
+
+.rep-period { min-width: 160px; height: 42px; border-radius: 999px; padding: 0 18px; }
+.rep-period-wrap .dd-menu { min-width: 100%; }
+
+/* White hover / open outline (replaces the dashboard's orange) */
+.rep-toolbar .filter-control:hover,
+.rep-toolbar .filter-control:focus,
+.rep-toolbar .dd.open .dd-btn { border-color: #ffffff; }
+
+.rep-period-wrap .dd-menu li.selected {
+    background-color: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+}
+
+.rep-topbar {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* ---------- Panel ---------- */
+.rep-panel {
+    flex: 1;
+    min-height: 0;
+    padding: 10px;
+    background-color: #3F3F43;
+    border-radius: 42px;
+}
+
+.rep-inner {
+    height: 100%;
+    padding: 22px 26px;
+    display: flex;
+    flex-direction: column;
+    background-color: #404245;
+    border: 1px solid #8A8F94;
+    border-radius: 34px;
+    overflow: hidden;
+}
+
+.rep-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-shrink: 0;
+}
+
+.rep-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.rep-sub { font-size: 0.8rem; color: #92949c; }
+
+.rep-scroll {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow-y: auto;
+    padding-right: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: #5a5c62 transparent;
+}
+
+.rep-scroll::-webkit-scrollbar { width: 8px; }
+.rep-scroll::-webkit-scrollbar-thumb { background: #5a5c62; border-radius: 8px; }
+
+/* ---------- KPI row (reuses .stat-card from the dashboard) ---------- */
+.kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.kpi-row .stat-card { min-height: 112px; }
+
+/* ---------- Cards ---------- */
+.rep-grid {
+    display: grid;
+    grid-template-columns: 2.5fr 1fr;
+    gap: 14px;
+    flex-shrink: 0;
+}
+
+.rep-card {
+    min-width: 0;
+    padding: 16px 20px 18px;
+    display: flex;
+    flex-direction: column;
+    background-color: #35363B;
+    border: 1px solid #4b4d52;
+    border-radius: 24px;
+}
+
+.rep-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 24px;
+    margin-bottom: 12px;
+}
+
+.rep-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.rep-card-title svg { width: 16px; height: 16px; color: #92949c; }
+
+.rep-note { font-size: 0.74rem; color: #92949c; white-space: nowrap; }
+.rep-note strong { color: #ffffff; font-weight: 600; }
+
+.legend {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 0.72rem;
+    color: #b7b9c0;
+}
+
+.legend span { display: flex; align-items: center; gap: 6px; }
+.legend i {
+    display: block;
+    width: 9px;
+    height: 9px;
+    border-radius: 3px;
+}
+
+.dot-expected  { background: #1c1d20; box-shadow: 0 0 0 1px #5a5c62; }
+.dot-collected { background: #ffffff; }
+.dot-paid      { background: #9db89a; }
+.dot-overdue   { background: #e99a69; }
+.dot-vacant    { background: #5a5c62; }
+
+/* ---------- Bar chart ---------- */
+.chart-wrap { position: relative; }
+
+.chart-wrap svg { display: block; width: 100%; height: auto; }
+
+.chart-grid  { stroke: #4b4d52; stroke-width: 1; }
+.chart-label { fill: #92949c; font-size: 11px; font-family: inherit; }
+
+.bar-expected  { fill: #1c1d20; stroke: #5a5c62; stroke-width: 1; }
+.bar-collected { fill: #ffffff; }
+
+.bar-expected,
+.bar-collected {
+    transform-box: fill-box;
+    transform-origin: bottom;
+    animation: bar-grow 0.5s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes bar-grow {
+    from { transform: scaleY(0); }
+    to   { transform: scaleY(1); }
+}
+
+.bar-group .hit { fill: transparent; }
+.bar-group:hover .hit { fill: rgba(255, 255, 255, 0.05); }
+
+.chart-tip {
+    position: absolute;
+    z-index: 5;
+    padding: 8px 12px;
+    font-size: 0.74rem;
+    line-height: 1.5;
+    color: #e7e8ec;
+    white-space: nowrap;
+    pointer-events: none;
+    background: rgba(47, 48, 52, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+    transform: translate(-50%, calc(-100% - 8px));
+}
+
+.chart-tip[hidden] { display: none; }
+.chart-tip b { display: block; margin-bottom: 2px; font-weight: 600; color: #ffffff; }
+
+/* ---------- Donut ---------- */
+.donut-card { align-items: stretch; }
+
+.donut-wrap {
+    position: relative;
+    width: 170px;
+    height: 170px;
+    margin: 4px auto 14px;
+}
+
+.donut-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+
+.donut-track { fill: none; stroke: #2f3034; stroke-width: 18; }
+.donut-seg   { fill: none; stroke-width: 18; transition: stroke-width 0.15s ease; }
+.donut-seg:hover { stroke-width: 21; }
+
+.donut-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.donut-center strong { font-size: 1.5rem; font-weight: 600; line-height: 1.1; }
+.donut-center span   { font-size: 0.72rem; color: #92949c; }
+
+.donut-legend {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.donut-legend li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 12px;
+    font-size: 0.8rem;
+    color: #d3d4da;
+    background: #2f3034;
+    border-radius: 12px;
+}
+
+.donut-legend i { display: block; width: 9px; height: 9px; border-radius: 3px; }
+.donut-legend b { margin-left: auto; font-weight: 600; color: #ffffff; }
+
+/* ---------- Tenant payment table (reuses .leases-table) ---------- */
+.rep-table { font-size: 0.84rem; }
+.rep-table thead th { position: static; }
+.rep-table td { height: 50px; }
+.rep-table tbody tr:last-child td { border-bottom: none; }
+.rep-table .muted { color: #92949c; }
+.rep-table .owed  { color: #f0b08a; font-weight: 500; }
+.rep-table-wrap { overflow-x: auto; }
+
+/* ---------- Maintenance list ---------- */
+.issue-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.issue-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.issue-row:last-child { border-bottom: none; }
+
+.issue-text { flex: 1; min-width: 0; }
+
+.issue-title {
+    font-size: 0.84rem;
+    font-weight: 500;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.issue-sub {
+    font-size: 0.72rem;
+    color: #92949c;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tag {
+    flex-shrink: 0;
+    padding: 1px 10px;
+    font-size: 0.66rem;
+    font-weight: 500;
+    line-height: 1.6;
+    color: #2b2c30;
+    border-radius: 999px;
+}
+
+.tag.open     { background: #e99a69; }
+.tag.progress { background: #8aa9b1; }
+.tag.done     { background: #9db89a; }
+
+/* ---------- Smaller screens ---------- */
+@media (max-width: 1150px) {
+    .kpi-row  { grid-template-columns: repeat(2, 1fr); }
+    .rep-grid { grid-template-columns: 1fr; }
+}

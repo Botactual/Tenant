@@ -1,0 +1,132 @@
+/* Add Tenant popup (Dashboard only). Loaded after dashstyling.css.
+   Everything is scoped to #tenant-modal so other pages' popups are not affected. */
+
+#tenant-modal .modal {
+    width: 600px;
+    max-height: 82vh;
+}
+
+/* Form body scrolls, title and buttons stay in view */
+#tenant-modal .modal-scroll {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    overflow-y: auto;
+    padding-right: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: #5a5c62 transparent;
+}
+
+#tenant-modal .modal-scroll::-webkit-scrollbar { width: 8px; }
+#tenant-modal .modal-scroll::-webkit-scrollbar-thumb { background: #5a5c62; border-radius: 8px; }
+
+#tenant-modal .form-section {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#tenant-modal .form-section + .form-section {
+    padding-top: 16px;
+    border-top: 1px solid #4b4d52;
+}
+
+#tenant-modal .form-section h4 {
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #92949c;
+}
+
+/* Labels stack normally in a section; only share width inside a row */
+#tenant-modal .form-section > label { flex: none; }
+#tenant-modal .modal-row > label    { flex: 1; }
+
+/* Archived checkbox */
+#tenant-modal .check-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.84rem;
+    color: #d3d4da;
+    cursor: pointer;
+}
+
+#tenant-modal .check-row input {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    accent-color: #ffffff;
+    cursor: pointer;
+}
+
+
+/* ---------- Tenant details popup (#detail-modal) ---------- */
+#detail-modal .modal {
+    width: 520px;
+    max-height: 82vh;
+}
+
+#detail-modal .detail-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+#detail-modal .detail-sub {
+    margin-top: 2px;
+    font-size: 0.8rem;
+    color: #92949c;
+}
+
+#detail-modal .modal-scroll {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    overflow-y: auto;
+    padding-right: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: #5a5c62 transparent;
+}
+
+#detail-modal .modal-scroll::-webkit-scrollbar { width: 8px; }
+#detail-modal .modal-scroll::-webkit-scrollbar-thumb { background: #5a5c62; border-radius: 8px; }
+
+#detail-modal .form-section {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#detail-modal .form-section + .form-section {
+    padding-top: 16px;
+    border-top: 1px solid #4b4d52;
+}
+
+#detail-modal .form-section h4 {
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #92949c;
+}
+
+#detail-modal .detail-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 0.88rem;
+}
+
+#detail-modal .detail-label { color: #b7b9c0; flex: none; }
+#detail-modal .detail-value { color: #ffffff; text-align: right; word-break: break-word; }
+#detail-modal .detail-value a { color: #ffffff; text-decoration: underline; }

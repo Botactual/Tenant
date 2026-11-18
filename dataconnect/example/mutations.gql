@@ -1,0 +1,77 @@
+mutation CreateProperty($name: String, $address: String!, $status: String!) @auth(level: USER) {
+  property_insert(data: { name: $name, address: $address, status: $status })
+}
+
+mutation CreateTenant(
+  $firstName: String!
+  $lastName: String!
+  $email: String!
+  $phoneNumber: String!
+  $emergencyContact: String
+  $moveInDate: Date
+  $isArchived: Boolean
+) @auth(level: USER) {
+  tenant_insert(data: {
+    firstName: $firstName
+    lastName: $lastName
+    email: $email
+    phoneNumber: $phoneNumber
+    emergencyContact: $emergencyContact
+    moveInDate: $moveInDate
+    isArchived: $isArchived
+  })
+}
+
+mutation CreateLease(
+  $startDate: Date!
+  $endDate: Date!
+  $monthlyRent: Float!
+  $depositAmount: Float
+  $leaseDocumentUrl: String
+  $propertyId: UUID!
+  $tenantId: UUID!
+) @auth(level: USER) {
+  lease_insert(data: {
+    startDate: $startDate
+    endDate: $endDate
+    monthlyRent: $monthlyRent
+    depositAmount: $depositAmount
+    leaseDocumentUrl: $leaseDocumentUrl
+    property: { id: $propertyId }
+    tenant: { id: $tenantId }
+  })
+}
+
+mutation CreatePayment(
+  $amount: Float!
+  $paymentDate: Date!
+  $status: String!
+  $paymentMethod: String
+  $transactionReference: String
+  $leaseId: UUID!
+) @auth(level: USER) {
+  payment_insert(data: {
+    amount: $amount
+    paymentDate: $paymentDate
+    status: $status
+    paymentMethod: $paymentMethod
+    transactionReference: $transactionReference
+    lease: { id: $leaseId }
+  })
+}
+
+mutation CreateMaintenanceRequest(
+  $title: String!
+  $description: String!
+  $status: String!
+  $priorityLevel: String
+  $propertyId: UUID!
+) @auth(level: USER) {
+  maintenanceRequest_insert(data: {
+    title: $title
+    description: $description
+    status: $status
+    priorityLevel: $priorityLevel
+    property: { id: $propertyId }
+  })
+}

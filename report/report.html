@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report</title>
+    <!-- Google Fonts: Rubik -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Lucide Icons Library -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="../shared/dashstyling.css">
+    <link rel="stylesheet" href="report.css">
+</head>
+<body>
+    <div class="dashboard-container">
+
+        <aside class="sidebar flex-column justify-between">
+            <nav class="sidebar-nav">
+                <ul class="nav-list flex-column gap-xs">
+                    <li>
+                        <a href="../dashboard/dashboard.html" class="nav-item flex-row align-center gap-sm">
+                            <i data-lucide="layout-dashboard"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="report.html" class="nav-item active flex-row align-center gap-sm">
+                            <i data-lucide="bar-chart-3"></i>
+                            <span>Report</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../messages/messages.html" class="nav-item flex-row align-center gap-sm">
+                            <i data-lucide="mail"></i>
+                            <span>Messages</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../payment/payment.html" class="nav-item flex-row align-center gap-sm">
+                            <i data-lucide="credit-card"></i>
+                            <span>Payment</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <hr class="nav-divider">
+                <a href="settings.html" class="nav-item flex-row align-center gap-sm">
+                    <i data-lucide="settings"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="rep-main">
+
+            <!-- ============ TOOLBAR: export + period + top bar ============ -->
+            <div class="rep-toolbar">
+                <button type="button" class="export-btn" id="export-btn">
+                    <i data-lucide="download"></i>
+                    <span>Export Report</span>
+                </button>
+
+                <div class="dd rep-period-wrap" id="period-dd">
+                    <button type="button" class="dd-btn filter-control rep-period" id="period-btn" aria-haspopup="listbox">
+                        <span id="period-label">Last 6 months</span>
+                        <i data-lucide="chevron-down"></i>
+                    </button>
+                    <ul class="dd-menu" id="period-menu" role="listbox" hidden>
+                        <li role="option" data-n="3">Last 3 months</li>
+                        <li role="option" data-n="6" class="selected">Last 6 months</li>
+                        <li role="option" data-n="9">Last 9 months</li>
+                        <li role="option" data-n="12">Last 12 months</li>
+                        <li role="option" data-n="11">Year to date</li>
+                    </ul>
+                </div>
+
+                <div class="rep-topbar">
+                    <button type="button" class="profile-btn" aria-label="Profile">
+                        <i data-lucide="user-round"></i>
+                    </button>
+                    <button type="button" class="logout-btn" aria-label="Log out">
+                        <i data-lucide="log-out"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ============ REPORT PANEL ============ -->
+            <!-- ============ REPORT PANEL ============ -->
+            <section class="rep-panel">
+                <div class="rep-inner">
+
+                    <div class="rep-head">
+                        <h1 class="rep-title">Monthly Report</h1>
+                        <span class="rep-sub" id="rep-month">November 2026</span>
+                    </div>
+
+                    <div class="rep-scroll">
+
+                        <!-- KPI cards -->
+                        <section class="kpi-row">
+                            <article class="stat-card stat-orange">
+                                <span class="stat-badge" id="kpi-expected-badge"></span>
+                                <i data-lucide="wallet" class="stat-icon"></i>
+                                <p class="stat-label">Expected Rent</p>
+                                <p class="stat-value" id="kpi-expected"></p>
+                            </article>
+
+                            <article class="stat-card stat-green">
+                                <span class="stat-badge" id="kpi-collected-badge"></span>
+                                <i data-lucide="circle-check" class="stat-icon"></i>
+                                <p class="stat-label">Collected</p>
+                                <p class="stat-value" id="kpi-collected"></p>
+                            </article>
+
+                            <article class="stat-card stat-sand">
+                                <span class="stat-badge" id="kpi-owed-badge"></span>
+                                <i data-lucide="triangle-alert" class="stat-icon"></i>
+                                <p class="stat-label">Outstanding</p>
+                                <p class="stat-value" id="kpi-owed"></p>
+                            </article>
+
+                            <article class="stat-card stat-blue">
+                                <span class="stat-badge" id="kpi-occ-badge"></span>
+                                <i data-lucide="building-2" class="stat-icon"></i>
+                                <p class="stat-label">Occupancy</p>
+                                <p class="stat-value" id="kpi-occ"></p>
+                            </article>
+                        </section>
+
+                        <!-- Chart + donut -->
+                        <div class="rep-grid">
+                            <section class="rep-card">
+                                <div class="rep-card-head">
+                                    <h2 class="rep-card-title"><i data-lucide="chart-column"></i>Rent Collection</h2>
+                                    <div class="legend">
+                                        <span><i class="dot-expected"></i>Expected</span>
+                                        <span><i class="dot-collected"></i>Collected</span>
+                                        <span class="rep-note" id="chart-rate"></span>
+                                    </div>
+                                </div>
+                                <div class="chart-wrap" id="chart-wrap">
+                                    <svg id="bar-chart" viewBox="0 0 780 270" role="img" aria-label="Rent expected versus collected per month"></svg>
+                                    <div class="chart-tip" id="chart-tip" hidden></div>
+                                </div>
+                            </section>
+
+                            <section class="rep-card donut-card">
+                                <div class="rep-card-head">
+                                    <h2 class="rep-card-title"><i data-lucide="chart-pie"></i>Unit Overview</h2>
+                                </div>
+                                <div class="donut-wrap">
+                                    <svg id="donut" viewBox="0 0 160 160" role="img" aria-label="Units by payment status"></svg>
+                                    <div class="donut-center">
+                                        <strong id="donut-total"></strong>
+                                        <span>occupied</span>
+                                    </div>
+                                </div>
+                                <ul class="donut-legend" id="donut-legend"></ul>
+                            </section>
+                        </div>
+
+                        <!-- Table + maintenance -->
+                        <div class="rep-grid">
+                            <section class="rep-card">
+                                <div class="rep-card-head">
+                                    <h2 class="rep-card-title"><i data-lucide="users"></i>Tenant Payment Summary</h2>
+                                    <a href="../payment/payment.html" class="view-all">View All →</a>
+                                </div>
+                                <div class="rep-table-wrap">
+                                    <table class="leases-table rep-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Tenant</th>
+                                                <th class="num">Monthly Rent</th>
+                                                <th>Last Payment</th>
+                                                <th class="num">Balance Due</th>
+                                                <th class="center">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="summary-body"></tbody>
+                                    </table>
+                                </div>
+                            </section>
+
+                            <section class="rep-card">
+                                <div class="rep-card-head">
+                                    <h2 class="rep-card-title"><i data-lucide="wrench"></i>Maintenance Requests</h2>
+                                    <a href="../messages/messages.html" class="view-all">View All →</a>
+                                </div>
+                                <ul class="issue-list" id="issue-list"></ul>
+                            </section>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script type="module" src="report.js"></script>
+</body>
+</html>

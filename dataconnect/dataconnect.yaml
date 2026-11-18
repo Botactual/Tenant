@@ -1,0 +1,13 @@
+specVersion: "v1"
+serviceId: "dashboard-572f3-service"
+location: "asia-east1"
+schemas:
+  - source: "./schema"
+    datasource:
+      postgresql:
+        database: "dashboard-572f3-database"
+        cloudSql:
+          instanceId: "dashboard-572f3-instance"
+          # schemaValidation: "STRICT"     # STRICT mode makes Postgres schema match Data Connect exactly.
+          # schemaValidation: "COMPATIBLE" # COMPATIBLE mode makes Postgres schema compatible with Data Connect.
+connectorDirs: ["./example"]

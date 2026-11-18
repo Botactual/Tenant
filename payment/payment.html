@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment</title>
+    <!-- Google Fonts: Rubik -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Lucide Icons Library -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="../shared/dashstyling.css">
+    <link rel="stylesheet" href="payment.css">
+</head>
+<body>
+    <div class="dashboard-container">
+
+        <aside class="sidebar flex-column justify-between">
+            <nav class="sidebar-nav">
+                <ul class="nav-list flex-column gap-xs">
+                    <li>
+                        <a href="../dashboard/dashboard.html" class="nav-item flex-row align-center gap-sm">
+                            <i data-lucide="layout-dashboard"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../report/report.html" class="nav-item flex-row align-center gap-sm">
+                            <i data-lucide="bar-chart-3"></i>
+                            <span>Report</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../messages/messages.html" class="nav-item flex-row align-center gap-sm">
+                            <i data-lucide="mail"></i>
+                            <span>Messages</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="payment.html" class="nav-item active flex-row align-center gap-sm">
+                            <i data-lucide="credit-card"></i>
+                            <span>Payment</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <hr class="nav-divider">
+                <a href="settings.html" class="nav-item flex-row align-center gap-sm">
+                    <i data-lucide="settings"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="pay-main">
+
+            <!-- ============ TOOLBAR ============ -->
+            <div class="pay-toolbar">
+                <button type="button" class="record-btn" id="record-btn">
+                    <i data-lucide="plus"></i>
+                    <span>Record Payment</span>
+                </button>
+
+                <label class="pay-search">
+                    <i data-lucide="search"></i>
+                    <input type="search" id="pay-search" placeholder="Search tenant, unit or reference" autocomplete="off" aria-label="Search payments">
+                </label>
+
+                <div class="pay-topbar">
+                    <button type="button" class="profile-btn" aria-label="Profile">
+                        <i data-lucide="user-round"></i>
+                    </button>
+                    <button type="button" class="logout-btn" aria-label="Log out">
+                        <i data-lucide="log-out"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ============ PANEL ============ -->
+            <section class="pay-panel">
+                <div class="pay-inner">
+
+                    <div class="pay-head">
+                        <div class="pay-heading">
+                            <h1 class="pay-title">Payments</h1>
+                            <span class="pay-sub" id="pay-month">November 2026</span>
+                        </div>
+
+                        <div class="pay-tabs" role="tablist">
+                            <button type="button" class="pay-tab active" data-tab="payments" role="tab">Payment History</button>
+                            <button type="button" class="pay-tab" data-tab="invoices" role="tab">Invoices</button>
+                        </div>
+
+                        <section class="pay-summary">
+                        <article class="stat-card stat-green">
+                            <i data-lucide="circle-check" class="stat-icon"></i>
+                            <p class="stat-label">Collected this month</p>
+                            <p class="stat-value" id="sum-collected"></p>
+                        </article>
+                        <article class="stat-card stat-orange">
+                            <i data-lucide="triangle-alert" class="stat-icon"></i>
+                            <p class="stat-label">Outstanding</p>
+                            <p class="stat-value" id="sum-owed"></p>
+                        </article>
+                        <article class="stat-card stat-blue">
+                            <i data-lucide="receipt" class="stat-icon"></i>
+                            <p class="stat-label">Payments recorded</p>
+                            <p class="stat-value" id="sum-count"></p>
+                        </article>
+                    </section>
+                    </div>
+
+                    <!-- Invoice filter (only shown on the Invoices tab) -->
+                    <div class="pay-chips" id="invoice-filter" hidden>
+                        <button type="button" class="pay-chip active" data-filter="all">All</button>
+                        <button type="button" class="pay-chip" data-filter="paid">Paid</button>
+                        <button type="button" class="pay-chip" data-filter="overdue">Overdue</button>
+                    </div>
+
+                    <!-- Payment history -->
+                    <div class="pay-table-wrap" id="payments-view">
+                        <table class="leases-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Tenant</th>
+                                    <th>For</th>
+                                    <th>Method</th>
+                                    <th>Reference</th>
+                                    <th class="num">Amount</th>
+                                    <th class="chev-col"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="payments-body"></tbody>
+                        </table>
+                        <p class="leases-empty" id="payments-empty" hidden>No payments match.</p>
+                    </div>
+
+                    <!-- Invoices -->
+                    <div class="pay-table-wrap" id="invoices-view" hidden>
+                        <table class="leases-table">
+                            <thead>
+                                <tr>
+                                    <th>Invoice</th>
+                                    <th>Tenant</th>
+                                    <th>Period</th>
+                                    <th>Due</th>
+                                    <th class="num">Amount</th>
+                                    <th class="center">Status</th>
+                                    <th class="chev-col"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoices-body"></tbody>
+                        </table>
+                        <p class="leases-empty" id="invoices-empty" hidden>No invoices match.</p>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ============ RECORD PAYMENT MODAL ============ -->
+    <div class="modal-backdrop" id="record-modal" hidden>
+        <form class="modal" id="record-form">
+            <h3>Record Payment</h3>
+
+            <div class="field">
+                <span class="field-label">Tenant</span>
+                <div class="chip-row" id="tenant-chips"></div>
+            </div>
+
+            <div class="modal-row">
+                <label>Amount (₱)
+                    <input type="number" name="amount" min="1" step="0.01" required>
+                </label>
+                <label>Date paid
+                    <input type="date" name="date" required>
+                </label>
+            </div>
+
+            <div class="field">
+                <span class="field-label">Method</span>
+                <div class="chip-row" id="method-chips"></div>
+            </div>
+
+            <label>Reference no. (optional)
+                <input type="text" name="ref" maxlength="40" placeholder="e.g. GC-48213">
+            </label>
+
+            <p class="modal-error" id="record-error" hidden></p>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-ghost" id="record-cancel">Cancel</button>
+                <button type="submit" class="btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ============ DETAIL MODAL (payment / invoice + lease) ============ -->
+    <div class="modal-backdrop" id="detail-modal" hidden>
+        <div class="modal detail-modal">
+            <h3 id="detail-title"></h3>
+            <div id="detail-body"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn-ghost" id="detail-close">Close</button>
+                <button type="button" class="btn-primary" id="detail-download">Download Invoice</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="payment.js"></script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="../shared/dashstyling.css">
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <div class="dashboard-container">
+
+        <aside class="sidebar flex-column justify-between">
+            <nav class="sidebar-nav">
+                <ul class="nav-list flex-column gap-xs">
+                    <li>
+                        <a href="dashboard.html" class="nav-item active flex-row align-center gap-sm">
+                            <i data-lucide="layout-dashboard"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../report/report.html" class="nav-item flex-row align-center gap-sm">
+                            <i data-lucide="bar-chart-3"></i>
+                            <span>Report</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../messages/messages.html" class="nav-item flex-row align-center gap-sm">
+                            <i data-lucide="mail"></i>
+                            <span>Messages</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../payment/payment.html" class="nav-item flex-row align-center gap-sm">
+                            <i data-lucide="credit-card"></i>
+                            <span>Payment</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <hr class="nav-divider">
+                <a href="settings.html" class="nav-item flex-row align-center gap-sm">
+                    <i data-lucide="settings"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </aside>
+
+        <aside class="foundation-panel">
+
+            <!-- ============ CURRENT LEASES ============ -->
+            <div class="inner-custom-panel">
+
+                <div class="leases-header">
+                    <h2 class="leases-title">Current Leases</h2>
+
+                    <div class="leases-filters">
+                        <select class="filter-control" id="filter-status" aria-label="Lease status">
+                            <option value="all">Lease Status</option>
+                            <option value="paid">Paid</option>
+                            <option value="overdue">Overdue</option>
+                        </select>
+
+                        <select class="filter-control" id="filter-unit" aria-label="Unit">
+                            <option value="all">Unit</option>
+                        </select>
+
+                        <button type="button" class="filter-control filter-date">
+                            <i data-lucide="calendar"></i>
+                            <span>Nov 1, 2025 – Nov 1, 2027</span>
+                        </button>
+
+                        <button type="button" class="add-btn" id="add-tenant-btn">
+                            <i data-lucide="user-plus"></i>
+                            <span>Add Tenant</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="leases-table-wrap">
+                    <table class="leases-table">
+                        <thead>
+                            <tr>
+                                <th>Tenant</th>
+                                <th>Lease Type</th>
+                                <th>Lease Term</th>
+                                <th class="num">Monthly Rent</th>
+                                <th class="center">Status</th>
+                                <th class="chev-col"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="leases-body"></tbody>
+                    </table>
+
+                    <p class="leases-empty" id="leases-empty">Loading leases…</p>
+                </div>
+
+            </div>
+
+            <header class="topbar">
+                <div class="topbar-pill">
+                    <button type="button" class="topbar-icon-btn notif-toggle" id="notif-toggle" aria-label="Show notifications" aria-haspopup="true" aria-expanded="false">
+                        <i data-lucide="chevron-down"></i>
+                    </button>
+                    <button type="button" class="topbar-icon-btn bell-btn" aria-label="Notifications">
+                        <i data-lucide="bell"></i>
+                        <span class="notif-dot" id="notif-dot"></span>
+                    </button>
+                </div>
+
+                <button type="button" class="profile-btn" aria-label="Profile">
+                    <i data-lucide="user-round"></i>
+                </button>
+
+                <button type="button" class="logout-btn" id="logout-btn" aria-label="Log out">
+                    <i data-lucide="log-out"></i>
+                </button>
+
+                <!-- Notifications dropdown -->
+                <div class="notif-panel" id="notif-panel" hidden>
+                    <div class="notif-head">
+                        <h3>Notifications</h3>
+                        <button type="button" class="notif-clear" id="notif-clear">Mark all read</button>
+                    </div>
+
+                    <ul class="notif-list" id="notif-list"></ul>
+                </div>
+            </header>
+
+            <section class="stat-cards">
+                <article class="stat-card stat-orange">
+                    <span class="stat-badge" id="stat-leases-badge">—</span>
+                    <i data-lucide="eye" class="stat-icon"></i>
+                    <p class="stat-label">Active Leases</p>
+                    <p class="stat-value" id="stat-leases">—</p>
+                </article>
+
+                <article class="stat-card stat-blue">
+                    <span class="stat-badge" id="stat-owed-badge">—</span>
+                    <i data-lucide="triangle-alert" class="stat-icon"></i>
+                    <p class="stat-label">Outstanding Rent</p>
+                    <p class="stat-value" id="stat-owed">—</p>
+                </article>
+
+                <article class="stat-card stat-sand">
+                    <span class="stat-badge" id="stat-rent-badge">—</span>
+                    <i data-lucide="activity" class="stat-icon"></i>
+                    <p class="stat-label">Total Rent</p>
+                    <p class="stat-value" id="stat-rent">—</p>
+                </article>
+
+                <article class="stat-card stat-green">
+                    <span class="stat-badge" id="stat-tenants-badge">—</span>
+                    <i data-lucide="users" class="stat-icon"></i>
+                    <p class="stat-label">Total Tenants</p>
+                    <p class="stat-value" id="stat-tenants">—</p>
+                </article>
+            </section>
+
+            <!-- ============ BOTTOM ROW: QUICK ACTIONS + RECENT PAYMENTS ============ -->
+            <div class="bottom-row">
+
+                <section class="bottom-panel">
+                    <div class="bottom-head">
+                        <h2 class="bottom-title">Quick Actions</h2>
+                    </div>
+                    <div class="qa-grid">
+                        <button type="button" class="qa-btn"><i data-lucide="banknote"></i><span>Record Payment</span></button>
+                        <button type="button" class="qa-btn"><i data-lucide="file-text"></i><span>Add Lease</span></button>
+                        <button type="button" class="qa-btn"><i data-lucide="calendar-clock"></i><span>Lease Extension</span></button>
+                        <button type="button" class="qa-btn"><i data-lucide="file-spreadsheet"></i><span>Generate Report</span></button>
+                        <button type="button" class="qa-btn"><i data-lucide="wrench"></i><span>Maintenance</span></button>
+                    </div>
+                </section>
+
+                <section class="bottom-panel">
+                    <div class="bottom-head">
+                        <h2 class="bottom-title"><i data-lucide="clock"></i>Recent Payments</h2>
+                        <a href="../payment/payment.html" class="view-all">View All →</a>
+                    </div>
+                    <div class="pay-wrap">
+                        <table class="pay-table">
+                            <thead>
+                                <tr><th>Date</th><th>Tenant Name</th><th>Amount</th><th>Status</th></tr>
+                            </thead>
+                            <tbody id="recent-payments"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+            </div>
+        </aside>
+
+        <main class="main-content flex-1"></main>
+    </div>
+
+    <!-- ============ ADD TENANT MODAL ============ -->
+    <div class="modal-backdrop" id="tenant-modal" hidden>
+        <form class="modal" id="tenant-form">
+            <h3>Add Tenant</h3>
+
+            <div class="modal-scroll">
+
+                <!-- Tenant table -->
+                <div class="form-section">
+                    <h4>Tenant</h4>
+                    <div class="modal-row">
+                        <label>First name <input type="text" name="firstName" required></label>
+                        <label>Last name <input type="text" name="lastName" required></label>
+                    </div>
+                    <div class="modal-row">
+                        <label>Email <input type="email" name="email" placeholder="name@email.com" required></label>
+                        <label>Phone number <input type="tel" name="phoneNumber" placeholder="+63 900 000 0000" required></label>
+                    </div>
+                    <div class="modal-row">
+                        <label>Emergency contact (optional) <input type="text" name="emergencyContact" placeholder="Name · phone"></label>
+                        <label>Move-in date (optional) <input type="date" name="moveInDate"></label>
+                    </div>
+                    <label class="check-row">
+                        <input type="checkbox" name="isArchived">
+                        <span>Archived tenant</span>
+                    </label>
+                </div>
+
+                <!-- Property table -->
+                <div class="form-section">
+                    <h4>Property</h4>
+                    <div class="modal-row">
+                        <label>Unit <input type="number" name="unit" min="1" max="99" required></label>
+                        <label>Property name (optional) <input type="text" name="propertyName"></label>
+                    </div>
+                    <label>Address <input type="text" name="address" required></label>
+                    <label>Property status
+                        <select name="propertyStatus">
+                            <option>Occupied</option>
+                            <option>Vacant</option>
+                            <option>Under Maintenance</option>
+                        </select>
+                    </label>
+                </div>
+
+                <!-- Lease table -->
+                <div class="form-section">
+                    <h4>Lease</h4>
+                    <div class="modal-row">
+                        <label>Start date <input type="date" name="startDate" required></label>
+                        <label>End date <input type="date" name="endDate" required></label>
+                    </div>
+                    <div class="modal-row">
+                        <label>Monthly rent (₱) <input type="number" name="monthlyRent" min="0" step="0.01" required></label>
+                        <label>Deposit amount (₱, optional) <input type="number" name="depositAmount" min="0" step="0.01"></label>
+                    </div>
+                    <label>Lease document URL (optional) <input type="url" name="leaseDocumentUrl" placeholder="https://..."></label>
+                </div>
+
+            </div>
+
+            <p class="modal-error" id="tenant-error" hidden></p>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-ghost" id="tenant-cancel">Cancel</button>
+                <button type="submit" class="btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ============ TENANT DETAILS MODAL ============ -->
+    <div class="modal-backdrop" id="detail-modal" hidden>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="detail-name">
+            <div class="detail-head">
+                <div>
+                    <h3 id="detail-name"></h3>
+                    <p class="detail-sub" id="detail-sub"></p>
+                </div>
+                <span class="status-badge" id="detail-status"></span>
+            </div>
+
+            <div class="modal-scroll" id="detail-body"></div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-ghost" id="detail-close">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="dashboard.js"></script>
+</body>
+</html>

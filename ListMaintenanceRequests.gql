@@ -1,0 +1,11 @@
+# Add this to your Data Connect queries file, then redeploy the connector.
+# Copy the @auth level from your ListLeases query if it is not USER.
+query ListMaintenanceRequests @auth(level: USER) {
+  maintenanceRequests {
+    id
+    title
+    status
+    resolutionDate
+    property { name }
+  }
+}

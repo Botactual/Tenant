@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="../shared/dashstyling.css">
+    <link rel="stylesheet" href="messages.css">
+</head>
+<body>
+    <div class="dashboard-container">
+
+        <aside class="sidebar flex-column justify-between">
+            <nav class="sidebar-nav">
+                <ul class="nav-list flex-column gap-xs">
+                    <li>
+                        <a href="../dashboard/dashboard.html" class="nav-item flex-row align-center gap-sm">
+                            <i data-lucide="layout-dashboard"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../report/report.html" class="nav-item flex-row align-center gap-sm">
+                            <i data-lucide="bar-chart-3"></i>
+                            <span>Report</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="messages.html" class="nav-item active flex-row align-center gap-sm">
+                            <i data-lucide="mail"></i>
+                            <span>Messages</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../payment/payment.html" class="nav-item flex-row align-center gap-sm">
+                            <i data-lucide="credit-card"></i>
+                            <span>Payment</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <hr class="nav-divider">
+                <a href="settings.html" class="nav-item flex-row align-center gap-sm">
+                    <i data-lucide="settings"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="msg-main">
+
+            <!-- ============ TOOLBAR: compose + search + top bar ============ -->
+            <div class="msg-toolbar">
+                <button type="button" class="compose-btn" id="compose-btn">
+                    <i data-lucide="pencil"></i>
+                    <span>Compose</span>
+                </button>
+
+                <label class="msg-search">
+                    <i data-lucide="search"></i>
+                    <input type="search" id="msg-search" placeholder="Search messages" autocomplete="off" aria-label="Search messages">
+                    <i data-lucide="list"></i>
+                </label>
+
+                <div class="msg-topbar">
+                    <button type="button" class="profile-btn" aria-label="Profile">
+                        <i data-lucide="user-round"></i>
+                    </button>
+
+                    <button type="button" class="logout-btn" aria-label="Log out">
+                        <i data-lucide="log-out"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ============ MESSAGES PANEL ============ -->
+            <section class="msg-panel">
+                <div class="msg-inner">
+
+                    <!-- List view -->
+                    <div class="msg-view" id="list-view">
+                        <div class="msg-head">
+                            <h1 class="msg-title">
+                                Complaint Messages
+                                <span class="count-badge" id="msg-count">0</span>
+                            </h1>
+
+                            <div class="msg-tools">
+                                <div class="tool-wrap">
+                                    <button type="button" class="tool-btn" id="filter-btn" aria-label="Filter messages" aria-haspopup="true" aria-expanded="false">
+                                        <i data-lucide="list-filter"></i>
+                                    </button>
+                                    <div class="msg-menu" id="filter-menu" hidden>
+                                        <button type="button" class="menu-item selected" data-filter="all">All messages</button>
+                                        <button type="button" class="menu-item" data-filter="unread">Unread</button>
+                                        <button type="button" class="menu-item" data-filter="files">With attachments</button>
+                                    </div>
+                                </div>
+
+                                <div class="tool-wrap">
+                                    <button type="button" class="tool-btn" id="more-btn" aria-label="More options" aria-haspopup="true" aria-expanded="false">
+                                        <i data-lucide="ellipsis-vertical"></i>
+                                    </button>
+                                    <div class="msg-menu" id="more-menu" hidden>
+                                        <button type="button" class="menu-item" id="mark-all-read">Mark all as read</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <ul class="msg-list" id="msg-list"></ul>
+                        <p class="msg-empty" id="msg-empty" hidden>No messages match.</p>
+                    </div>
+
+                    <!-- Detail view -->
+                    <div class="msg-view" id="detail-view" hidden>
+                        <div class="msg-head">
+                            <button type="button" class="back-btn" id="back-btn">
+                                <i data-lucide="arrow-left"></i>
+                                <span>Back</span>
+                            </button>
+                        </div>
+
+                        <article class="detail">
+                            <header class="detail-head">
+                                <div class="unit-badge" id="detail-badge"><span>UNIT</span><strong></strong></div>
+                                <div class="detail-who">
+                                    <p class="detail-name" id="detail-name"></p>
+                                    <p class="detail-unit" id="detail-unit"></p>
+                                </div>
+                                <span class="msg-time" id="detail-time"></span>
+                            </header>
+
+                            <p class="detail-text" id="detail-text"></p>
+
+                            <div class="detail-attach" id="detail-attach" hidden>
+                                <span class="detail-thumb"><i data-lucide="image"></i></span>
+                                <span class="detail-file"><i data-lucide="paperclip"></i><span id="detail-file"></span></span>
+                            </div>
+                        </article>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ============ COMPOSE MODAL ============ -->
+    <div class="modal-backdrop" id="compose-modal" hidden>
+        <form class="modal" id="compose-form">
+            <h3>New Message</h3>
+
+            <div class="field">
+                <span class="field-label">To</span>
+                <div class="chip-row" id="to-chips"></div>
+            </div>
+
+            <label>Message
+                <textarea name="text" rows="4" placeholder="Write your message…"></textarea>
+            </label>
+
+            <p class="modal-error" id="compose-error" hidden></p>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-ghost" id="compose-cancel">Cancel</button>
+                <button type="submit" class="btn-primary">Send</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="messages.js"></script>
+</body>
+</html>

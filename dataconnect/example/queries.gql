@@ -1,0 +1,41 @@
+query ListLeases @auth(level: USER) {
+  leases {
+    id
+    startDate
+    endDate
+    monthlyRent
+    depositAmount
+    leaseDocumentUrl
+    property { id name address status }
+    tenant { id firstName lastName email phoneNumber emergencyContact moveInDate isArchived }
+  }
+}
+
+query ListPayments @auth(level: USER) {
+  payments(orderBy: [{ paymentDate: DESC }]) {
+    id
+    amount
+    paymentDate
+    status
+    paymentMethod
+    transactionReference
+    lease {
+      id
+      monthlyRent
+      property { name }
+      tenant { firstName lastName }
+    }
+  }
+}
+
+query ListMaintenanceRequests @auth(level: USER) {
+  maintenanceRequests {
+    id
+    title
+    description
+    status
+    priorityLevel
+    resolutionDate
+    property { id name }
+  }
+}
