@@ -49,6 +49,15 @@ export async function logout() {
   window.location.href = "../auth/login.html";
 }
 
+// ---------- Helpers ----------
+// The unit number is stored at the start of the property name ("Unit 01" or "Unit 01 – Sunrise").
+// Works with anything that has a property (a lease, a maintenance request) or a property itself.
+export function unitOf(item) {
+  const name = item?.property?.name ?? item?.name ?? "";
+  const m = /^Unit\s+(\d+)/i.exec(name);
+  return m ? m[1].padStart(2, "0") : "--";
+}
+
 // ---------- Reads ----------
 export async function listLeases() {
   const res = await executeQuery(queryRef(dc, "ListLeases"));
@@ -75,6 +84,21 @@ export async function addTenantWithLease({ property, tenant, lease }) {
       ...lease,
       propertyId: p.data.property_insert.id,
       tenantId: t.data.tenant_insert.id,
+    })
+  );
+}
+
+// Saves a payment against a lease (status is always "paid" when recorded by hand).
+export async function recordPayment({ leaseId, amount, paymentDate, paymentMethod, transactionReference }) {
+  const opt = (key, value) => (value === "" || value == null ? {} : { [key]: value });
+  await executeMutation(
+    mutationRef(dc, "CreatePayment", {
+      leaseId,
+      amount,
+      paymentDate,
+      status: "paid",
+      ...opt("paymentMethod", paymentMethod),
+      ...opt("transactionReference", transactionReference),
     })
   );
 }

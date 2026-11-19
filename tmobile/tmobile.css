@@ -1,0 +1,325 @@
+/* Tenēre Tenant (mobile only): same look as the website's login/signup,
+   rebuilt for phones. Background image is shared with the main site. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+
+body {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;                 /* real visible height on phones */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right)
+             env(safe-area-inset-bottom) env(safe-area-inset-left);
+    overflow-x: hidden;
+    font-family: 'Rubik', sans-serif;
+    color: #ffffff;
+    background-color: #464646;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Blurred photo behind everything, same as the website */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: url("../images/background.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(12px);
+    transform: scale(1.05);
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* ---------- Layout ---------- */
+.auth-wrap {
+    width: 100%;
+    max-width: 420px;
+    margin: auto;                       /* centers, but never clips the top when the keyboard is open */
+    padding: 28px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 22px;
+    text-align: center;
+}
+
+.brand-name {
+    font-size: 40px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.1;
+    color: #1c2b36;
+}
+
+.brand-tag {
+    margin-top: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.4px;
+    opacity: 0.95;
+}
+
+/* ---------- Card ---------- */
+@keyframes fallIn {
+    0%   { opacity: 0; transform: translateY(-40px) scale(0.96); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.auth-card {
+    width: 100%;
+    padding: 34px 22px 26px;
+    text-align: center;
+    color: #ffffff;
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 28px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+    animation: fallIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.auth-title {
+    margin: 0 0 26px;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+/* ---------- Form ---------- */
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.input-group { margin-bottom: 16px; }
+
+.input-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 400;
+    opacity: 0.85;
+}
+
+.input-group input {
+    width: 100%;
+    height: 48px;
+    padding: 0 16px;
+    font-family: inherit;
+    font-size: 16px;                    /* 16px stops iOS from zooming in on focus */
+    color: #333333;
+    background-color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.input-group input::placeholder { color: #a0a0a0; }
+
+.input-group input:focus {
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35);
+}
+
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.password-wrapper input { padding-right: 52px; }
+
+.toggle-password {
+    position: absolute;
+    right: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: #333333;
+    background: transparent;
+    border: none;
+    opacity: 0.4;
+    cursor: pointer;
+}
+
+.toggle-password.is-on { opacity: 0.9; }
+.toggle-password svg   { width: 20px; height: 20px; }
+
+.forgot-password {
+    margin: -4px 0 20px;
+    text-align: left;
+}
+
+.forgot-password a {
+    display: inline-block;
+    padding: 6px 0;                     /* bigger tap area */
+    font-size: 13px;
+    color: #ffffff;
+    text-decoration: none;
+    opacity: 0.8;
+}
+
+.form-message {
+    margin: 0 0 12px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #ffb4ab;
+}
+
+.form-message:empty { display: none; }
+
+/* ---------- Buttons ---------- */
+.auth-submit-btn {
+    width: 100%;
+    height: 50px;
+    padding: 0 12px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #ffffff;
+    background-color: #003865;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.auth-submit-btn:active   { background-color: #004b87; transform: scale(0.99); }
+.auth-submit-btn:disabled { opacity: 0.7; cursor: default; }
+
+.signup-btn { margin-top: 8px; }
+
+.divider-text {
+    margin: 24px 0 16px;
+    font-size: 13px;
+    opacity: 0.75;
+}
+
+.google-btn {
+    width: 100%;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background-color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.google-btn:active   { background-color: #f1f1f1; }
+.google-btn:disabled { opacity: 0.7; cursor: default; }
+
+.signup-prompt {
+    margin-top: 26px;
+    font-size: 13px;
+    opacity: 0.9;
+}
+
+.signup-prompt a {
+    color: #ffffff;
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+/* ---------- Popup (forgot password, etc.) ---------- */
+.popup-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    animation: popup-fade-in 0.2s ease;
+}
+
+.popup-box {
+    width: 100%;
+    max-width: 380px;
+    margin: 0;
+    padding: 30px 24px 24px;
+    border-radius: 20px;
+    animation: popup-pop-in 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.popup-title { margin: 0 0 10px; font-size: 22px; font-weight: 800; }
+.popup-text  { margin: 0 0 24px; font-size: 14px; line-height: 1.6; opacity: 0.85; }
+
+@keyframes popup-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes popup-pop-in {
+    from { opacity: 0; transform: scale(0.9) translateY(10px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ---------- Signed-in placeholder (home.html) ---------- */
+.home-email {
+    margin: 0 0 24px;
+    font-size: 14px;
+    opacity: 0.85;
+    word-break: break-all;
+}
+
+/* ---------- Mobile only: block wide, mouse-driven screens ---------- */
+.desktop-block { display: none; }
+
+@media (min-width: 600px) and (hover: hover) and (pointer: fine) {
+    .auth-wrap      { display: none; }
+    .desktop-block  {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: auto;
+        padding: 16px;
+        max-width: 420px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .auth-card, .popup-overlay, .popup-box { animation: none; }
+}
+
+@media (min-width: 600px) and (hover: hover) and (pointer: fine) {
+    .auth-wrap      { display: none; }
+    .desktop-block  {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: auto;
+        padding: 16px;
+        max-width: 420px;
+    }
+
+    /* Hide the big "Tenēre" word on PC; "Tenant Portal" and the card stay */
+    .desktop-block .brand-name { display: none; }
+}

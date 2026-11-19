@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#464646">
+    <title>Tenēre - Home</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="tmobile.css">
+</head>
+<body>
+
+    <main class="auth-wrap">
+        <div class="brand">
+            <span class="brand-name">Tenēre</span>
+            <span class="brand-tag">Tenant Portal</span>
+        </div>
+
+        <div class="auth-card">
+            <h1 class="auth-title">WELCOME</h1>
+            <p class="home-email" id="home-email"></p>
+            <p class="popup-text">You're signed in. Your tenant pages are coming soon.</p>
+            <button type="button" class="auth-submit-btn" id="logout-btn">LOG OUT</button>
+        </div>
+    </main>
+
+    <div class="desktop-block">
+        <div class="brand">
+            <span class="brand-name">Tenēre</span>
+            <span class="brand-tag">Tenant Portal</span>
+        </div>
+        <div class="auth-card">
+            <h1 class="popup-title">Mobile only</h1>
+            <p class="popup-text">The tenant portal is made for phones. Please open this page on your mobile device.</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth } from "../shared/firebase.js";
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+
+        // Not signed in? Back to the tenant login page.
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = "login.html";
+                return;
+            }
+            document.getElementById("home-email").textContent = user.email || "";
+        });
+
+        document.getElementById("logout-btn").addEventListener("click", async () => {
+            await signOut(auth);
+            window.location.href = "login.html";
+        });
+    </script>
+</body>
+</html>

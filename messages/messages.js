@@ -1,20 +1,74 @@
+import { requireLogin, logout, listLeases, listMaintenance, unitOf } from '../shared/firebase.js';
+
 lucide.createIcons();
 
 // ---------- Message data ----------
-// SAMPLE DATA: this array is the only thing that needs to change when Firebase is connected.
-// Fill it from Firestore (e.g. onSnapshot on a "messages" collection) and call renderList().
-// `file` is the attachment's filename; later it can hold a Storage URL for the real photo/video.
-let messages = [
-    { id: 1, name: 'Luigi I. Bautista',   unit: '01', text: 'Leaking pipe in bathroom ceiling — water dripping onto floor tiles.',       file: 'bathroom_leak.jpg',  time: 'Today 10:42 AM', unread: true  },
-    { id: 2, name: 'Jahred Lapiz',        unit: '02', text: 'Broken window latch on east-facing bedroom window — security concern.',      file: 'window_latch.jpg',   time: 'Yesterday',      unread: false },
-    { id: 3, name: 'Brandon Ruiz',        unit: '03', text: 'Mold growth spotted on bathroom wall near shower grout lines.',              file: 'mold_wall.jpg',      time: 'Oct 12',         unread: false },
-    { id: 4, name: 'Lance Vincent Darum', unit: '04', text: 'Air conditioning unit making loud rattling noise — not cooling properly.',   file: 'ac_unit.jpg',        time: 'Oct 10',         unread: false },
-    { id: 5, name: 'Tressen Valdez',      unit: '05', text: 'Electrical outlet in kitchen sparking — tripped circuit breaker twice.',     file: 'outlet_damage.jpg',  time: 'Oct 08',         unread: false },
-    { id: 6, name: 'Elvis Escobido',      unit: '06', text: 'Hallway ceiling light fixture broken — common area left in darkness at night.', file: 'ceiling_light.jpg', time: 'Oct 05',         unread: false },
-];
+// Incoming messages are the maintenance requests in the database. Each one is matched to the
+// tenant who leases that property. Messages you send from Compose live only in this session
+// until a messages table exists in the database.
+let messages  = [];   // { id, name, unit, text, file, time, unread, outgoing? }
+let tenants   = [];   // recipients for Compose, one per active lease: { unit, name }
+let loadError = '';
 
-// Tenants shown as recipients in the compose window (one per unit)
-const tenants = [...new Map(messages.map(m => [m.unit, { unit: m.unit, name: m.name }])).values()];
+// Which complaints this browser has already opened (the database has no read/unread field)
+const READ_KEY = 'tenere.readMessages';
+const readIds = (() => {
+    try { return new Set(JSON.parse(localStorage.getItem(READ_KEY) || '[]')); }
+    catch { return new Set(); }
+})();
+const saveRead = () => {
+    try { localStorage.setItem(READ_KEY, JSON.stringify([...readIds])); } catch { /* storage blocked */ }
+};
+
+const STATUS_LABEL = { open: 'Open', progress: 'In progress', done: 'Resolved' };
+const isDone = s => /^(done|resolved|closed|completed)$/i.test(String(s || ''));
+const fmtShort = iso => new Date(String(iso).slice(0, 10) + 'T00:00:00Z').toLocaleDateString('en-US',
+    { month: 'short', day: 'numeric', timeZone: 'UTC' });
+
+function timeLabel(r) {
+    if (isDone(r.status)) return r.resolutionDate ? 'Resolved ' + fmtShort(r.resolutionDate) : 'Resolved';
+    const key = String(r.status || '').toLowerCase();
+    return STATUS_LABEL[key] || r.status || 'Open';
+}
+
+function buildData(leases, requests) {
+    const active = leases.filter(l => !l.tenant.isArchived);
+
+    tenants = active
+        .map(l => ({ unit: unitOf(l), name: `${l.tenant.firstName} ${l.tenant.lastName}` }))
+        .sort((a, b) => a.unit.localeCompare(b.unit));
+
+    // property id -> the lease (and so the tenant) for that property; active tenants win
+    const byProperty = new Map();
+    leases.forEach(l => {
+        const cur = byProperty.get(l.property.id);
+        if (!cur || (cur.tenant.isArchived && !l.tenant.isArchived)) byProperty.set(l.property.id, l);
+    });
+
+    const incoming = requests.map(r => {
+        const lease = byProperty.get(r.property?.id);
+        const done = isDone(r.status);
+        return {
+            id: r.id,
+            name: lease ? `${lease.tenant.firstName} ${lease.tenant.lastName}` : (r.property?.name || 'Unknown tenant'),
+            unit: unitOf(r),
+            text: r.description ? `${r.title} — ${r.description}` : r.title,
+            file: null,   // no attachment field in the database yet
+            time: timeLabel(r),
+            unread: !done && !readIds.has(r.id),
+            done,
+            resolved: r.resolutionDate ? String(r.resolutionDate).slice(0, 10) : '',
+        };
+    });
+
+    // Unresolved first (by unit), then resolved with the most recently resolved on top
+    incoming.sort((a, b) =>
+        (a.done - b.done) ||
+        (a.done ? b.resolved.localeCompare(a.resolved) : a.unit.localeCompare(b.unit)));
+
+    // Keep anything sent from Compose this session at the top
+    messages = [...messages.filter(m => m.outgoing), ...incoming];
+}
 
 // ---------- State + elements ----------
 const state = { query: '', filter: 'all' };
@@ -73,15 +127,17 @@ function renderList() {
     listEl.innerHTML = '';
     shown.forEach(m => listEl.appendChild(rowEl(m)));
     countEl.textContent = shown.length;
+    emptyEl.textContent = loadError || (messages.length ? 'No messages match.' : 'No complaint messages yet.');
     emptyEl.hidden = shown.length !== 0;
     lucide.createIcons();
 }
 
 // ---------- Open / close a message ----------
 function openMessage(id) {
-    const m = messages.find(x => x.id === Number(id));
+    const m = messages.find(x => String(x.id) === String(id));
     if (!m) return;
     m.unread = false;
+    if (!m.outgoing) { readIds.add(m.id); saveRead(); }
 
     document.querySelector('#detail-badge strong').textContent = m.unit;
     document.getElementById('detail-name').textContent = m.outgoing ? 'To: ' + m.name : m.name;
@@ -161,7 +217,11 @@ filterMenu.querySelectorAll('[data-filter]').forEach(item => {
 });
 
 document.getElementById('mark-all-read').addEventListener('click', () => {
-    messages.forEach(m => { m.unread = false; });
+    messages.forEach(m => {
+        m.unread = false;
+        if (!m.outgoing) readIds.add(m.id);
+    });
+    saveRead();
     closeMenus();
     renderList();
 });
@@ -172,14 +232,18 @@ const composeForm  = document.getElementById('compose-form');
 const composeError = document.getElementById('compose-error');
 const toChips      = document.getElementById('to-chips');
 
-tenants.forEach(t => {
-    const label = document.createElement('label');
-    label.className = 'to-chip';
-    label.innerHTML = '<input type="radio" name="to"><span></span>';
-    label.querySelector('input').value = t.unit;
-    label.querySelector('span').textContent = `Unit ${t.unit} · ${t.name}`;
-    toChips.appendChild(label);
-});
+// Recipients are the active tenants from the database, so they are rebuilt after every load
+function buildRecipients() {
+    toChips.innerHTML = '';
+    tenants.forEach(t => {
+        const label = document.createElement('label');
+        label.className = 'to-chip';
+        label.innerHTML = '<input type="radio" name="to"><span></span>';
+        label.querySelector('input').value = t.unit;
+        label.querySelector('span').textContent = `Unit ${t.unit} · ${t.name}`;
+        toChips.appendChild(label);
+    });
+}
 
 document.getElementById('compose-btn').addEventListener('click', () => {
     composeForm.reset();
@@ -208,9 +272,9 @@ composeForm.addEventListener('submit', e => {
     }
 
     const tenant = tenants.find(t => t.unit === unit);
-    // When Firebase is connected, save this to Firestore instead of just the local array.
+    // Not saved to the database yet: there is no messages table, so this stays in the page.
     messages.unshift({
-        id: Date.now(),
+        id: 'out-' + Date.now(),
         name: tenant.name,
         unit: tenant.unit,
         text,
@@ -235,5 +299,23 @@ document.addEventListener('keydown', e => {
     composeModal.hidden = true;
 });
 
+// ---------- Logout ----------
+document.querySelector('.logout-btn')?.addEventListener('click', logout);
+
+// ---------- Load from the database ----------
+async function loadData() {
+    try {
+        const [leases, requests] = await Promise.all([listLeases(), listMaintenance()]);
+        buildData(leases, requests);
+        loadError = '';
+    } catch (err) {
+        console.error(err);
+        loadError = 'Could not load messages: ' + (err.message || err);
+    }
+    buildRecipients();
+    renderList();
+}
+
 // ---------- Start ----------
-renderList();
+await requireLogin();
+await loadData();

@@ -1,50 +1,95 @@
+import { requireLogin, logout, listLeases, listPayments, recordPayment, unitOf } from '../shared/firebase.js';
+
 lucide.createIcons();
 
-// ---------- Data ----------
-// SAMPLE DATA: these arrays are the only things that need to change when Firebase is connected.
-// Fill them from Firestore (leases / payments / invoices) and call renderAll().
-const MONTH_LABEL = 'November 2026';
-const PERIOD = 'Nov 2026';
+// ---------- Setup ----------
 const METHODS = ['Cash', 'GCash', 'Bank Transfer'];
+const DUE_DAY = 5;   // invoices are due on this day of the month
 
-const leases = [
-    { unit: '01', name: 'Luigi I. Bautista',   type: 'Residential', start: 'Mar 11, 2026', end: 'Dec 9, 2027', rent: 15000 },
-    { unit: '02', name: 'Jahred Lapiz',        type: 'Residential', start: 'Jul 5, 2026',  end: 'Dec 9, 2027', rent: 15000 },
-    { unit: '03', name: 'Brandon Ruiz',        type: 'Residential', start: 'Oct 12, 2026', end: 'Dec 9, 2027', rent: 15000 },
-    { unit: '04', name: 'Lance Vincent Darum', type: 'Residential', start: 'Jun 17, 2026', end: 'Dec 9, 2027', rent: 15000 },
-    { unit: '05', name: 'Tressen Valdez',      type: 'Residential', start: 'Dec 12, 2026', end: 'Dec 9, 2027', rent: 15000 },
-    { unit: '06', name: 'Elvis Escobido',      type: 'Residential', start: 'Sep 21, 2026', end: 'Dec 9, 2027', rent: 15000 },
-];
+const MONTHS      = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June',
+                     'July', 'August', 'September', 'October', 'November', 'December'];
+const now = new Date();
+const pad = n => String(n).padStart(2, '0');
+const THIS_MONTH  = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+const MONTH_LABEL = `${MONTHS_FULL[now.getMonth()]} ${now.getFullYear()}`;
+const PERIOD      = `${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
 
-// date is ISO (yyyy-mm-dd) so it sorts correctly
-let payments = [
-    { id: 1, unit: '01', date: '2026-11-01', for: 'Nov 2026', method: 'GCash',         ref: 'GC-48213',  amount: 15000 },
-    { id: 2, unit: '02', date: '2026-10-25', for: 'Nov 2026', method: 'Bank Transfer', ref: 'BT-77120',  amount: 15000 },
-    { id: 3, unit: '03', date: '2026-10-20', for: 'Nov 2026', method: 'Cash',          ref: '',          amount: 15000 },
-    { id: 4, unit: '06', date: '2026-10-18', for: 'Nov 2026', method: 'GCash',         ref: 'GC-47002',  amount: 15000 },
-    { id: 5, unit: '04', date: '2026-09-17', for: 'Oct 2026', method: 'Cash',          ref: '',          amount: 15000 },
-    { id: 6, unit: '01', date: '2026-10-02', for: 'Oct 2026', method: 'GCash',         ref: 'GC-45510',  amount: 15000 },
-    { id: 7, unit: '02', date: '2026-09-28', for: 'Oct 2026', method: 'Bank Transfer', ref: 'BT-76344',  amount: 15000 },
-];
-
-// One invoice per tenant for the current period. status: paid | overdue
-let invoices = [
-    { no: 'INV-2026-11-01', unit: '01', due: 'Nov 5, 2026', status: 'paid'    },
-    { no: 'INV-2026-11-02', unit: '02', due: 'Nov 5, 2026', status: 'paid'    },
-    { no: 'INV-2026-11-03', unit: '03', due: 'Nov 5, 2026', status: 'paid'    },
-    { no: 'INV-2026-11-04', unit: '04', due: 'Nov 5, 2026', status: 'overdue' },
-    { no: 'INV-2026-11-05', unit: '05', due: 'Nov 5, 2026', status: 'overdue' },
-    { no: 'INV-2026-11-06', unit: '06', due: 'Nov 5, 2026', status: 'paid'    },
-];
+// ---------- Data ----------
+// Everything below is built from the database (leases + payments) in loadData().
+let leases   = [];   // one per active lease: { id, unit, name, address, start, end, rent, deposit, doc }
+let payments = [];   // { id, leaseId, unit, date (ISO), for, method, ref, amount, status, paid }
+let invoices = [];   // one per active lease for the current month: { no, unit, leaseId, due, status }
+let loadError = '';
 
 // ---------- Helpers ----------
 const $ = id => document.getElementById(id);
 const peso = n => '₱' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
-const leaseOf = unit => leases.find(l => l.unit === unit);
-const fmtDate = iso => new Date(iso + 'T00:00:00Z').toLocaleDateString('en-US',
+const fmtDate = iso => new Date(String(iso).slice(0, 10) + 'T00:00:00Z').toLocaleDateString('en-US',
     { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+const periodOf = iso => {
+    const [y, m] = String(iso).slice(0, 10).split('-');
+    return `${MONTHS[Number(m) - 1]} ${y}`;
+};
+const cap = s => { s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); };
+const leaseOf = unit => leases.find(l => l.unit === unit);
+const todayISO = () => `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 
 const state = { tab: 'payments', filter: 'all', query: '' };
+
+// Turns the database rows into the arrays the page renders from
+function buildData(rawLeases, rawPayments) {
+    leases = rawLeases
+        .filter(l => !l.tenant.isArchived)
+        .sort((a, b) => unitOf(a).localeCompare(unitOf(b)))
+        .map(l => ({
+            id: l.id,
+            unit: unitOf(l),
+            name: `${l.tenant.firstName} ${l.tenant.lastName}`,
+            address: l.property?.address || '',
+            start: fmtDate(l.startDate),
+            end: fmtDate(l.endDate),
+            rent: Number(l.monthlyRent),
+            deposit: l.depositAmount,
+            doc: l.leaseDocumentUrl || '',
+        }));
+
+    const byId = new Map(leases.map(l => [l.id, l]));
+
+    // The database has no "covers" field, so a payment covers the month it was made in
+    payments = rawPayments
+        .filter(p => p.lease && byId.has(p.lease.id))
+        .map(p => {
+            const l = byId.get(p.lease.id);
+            const date = String(p.paymentDate).slice(0, 10);
+            return {
+                id: p.id,
+                leaseId: l.id,
+                unit: l.unit,
+                date,
+                for: periodOf(date),
+                method: p.paymentMethod || '—',
+                ref: p.transactionReference || '',
+                amount: p.amount != null ? Number(p.amount) : l.rent,
+                status: p.status,
+                paid: String(p.status).toLowerCase() === 'paid',
+            };
+        });
+
+    // Same rule as the Dashboard: a lease is Paid when it has a paid payment dated this month
+    const paidLeaseIds = new Set(
+        payments.filter(p => p.paid && p.date.startsWith(THIS_MONTH)).map(p => p.leaseId)
+    );
+
+    const dueISO = `${THIS_MONTH}-${pad(DUE_DAY)}`;
+    invoices = leases.map(l => ({
+        no: `INV-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${l.unit}`,
+        unit: l.unit,
+        leaseId: l.id,
+        due: fmtDate(dueISO),
+        status: paidLeaseIds.has(l.id) ? 'paid' : 'overdue',
+    }));
+}
 
 // Builds a <tr> from cell specs; text is always set with textContent so nothing can inject HTML
 function makeRow(cells, onOpen, overdue) {
@@ -91,9 +136,12 @@ const matches = text => !state.query || text.toLowerCase().includes(state.query.
 
 // ---------- Summary ----------
 function renderSummary() {
-    const rentOf = i => leaseOf(i.unit).rent;
-    const collected = invoices.filter(i => i.status === 'paid').reduce((t, i) => t + rentOf(i), 0);
-    const owed = invoices.filter(i => i.status === 'overdue').reduce((t, i) => t + rentOf(i), 0);
+    const collected = payments
+        .filter(p => p.paid && p.date.startsWith(THIS_MONTH))
+        .reduce((t, p) => t + p.amount, 0);
+    const owed = invoices
+        .filter(i => i.status === 'overdue')
+        .reduce((t, i) => t + leaseOf(i.unit).rent, 0);
     $('pay-month').textContent = MONTH_LABEL;
     $('sum-collected').textContent = peso(collected);
     $('sum-owed').textContent = peso(owed);
@@ -105,7 +153,7 @@ function renderPayments() {
     const body = $('payments-body');
     body.innerHTML = '';
     const rows = [...payments]
-        .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id)
+        .sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)))
         .filter(p => {
             const l = leaseOf(p.unit);
             return matches([l.name, 'unit ' + p.unit, p.ref, p.method].join(' '));
@@ -125,7 +173,10 @@ function renderPayments() {
             { text: peso(p.amount), cls: 'num amount' },
         ], () => openDetail('payment', p)));
     });
-    $('payments-empty').hidden = rows.length !== 0;
+
+    const empty = $('payments-empty');
+    empty.textContent = loadError || (payments.length ? 'No payments match.' : 'No payments recorded yet.');
+    empty.hidden = rows.length !== 0;
 }
 
 // ---------- Invoices ----------
@@ -149,7 +200,10 @@ function renderInvoices() {
             { node: badgeNode(i.status), cls: 'center' },
         ], () => openDetail('invoice', i), i.status === 'overdue'));
     });
-    $('invoices-empty').hidden = rows.length !== 0;
+
+    const empty = $('invoices-empty');
+    empty.textContent = loadError || (invoices.length ? 'No invoices match.' : 'No active leases yet.');
+    empty.hidden = rows.length !== 0;
 }
 
 // ---------- Tabs + filter ----------
@@ -183,18 +237,26 @@ $('pay-search').addEventListener('input', e => {
 const detailModal = $('detail-modal');
 let currentInvoice = null;
 
+// rows are [label, value] or [label, value, true] when the value is a link
 function section(title, rows) {
     const s = document.createElement('div');
     s.className = 'detail-section';
     const h = document.createElement('h4');
     h.textContent = title;
     s.appendChild(h);
-    rows.forEach(([k, v]) => {
+    rows.forEach(([k, v, isLink]) => {
         const r = document.createElement('div');
         r.className = 'detail-row';
         const a = document.createElement('span'), b = document.createElement('span');
         a.textContent = k;
-        b.textContent = v;
+        if (isLink && /^https?:\/\//i.test(v || '')) {
+            const link = document.createElement('a');
+            link.href = v; link.target = '_blank'; link.rel = 'noopener';
+            link.textContent = 'Open document';
+            b.appendChild(link);
+        } else {
+            b.textContent = v;
+        }
         r.append(a, b);
         s.appendChild(r);
     });
@@ -210,13 +272,14 @@ function openDetail(kind, item) {
         $('detail-title').textContent = 'Payment Details';
         body.append(section('Payment', [
             ['Amount', peso(item.amount)],
+            ['Status', cap(item.status) || '—'],
             ['Date paid', fmtDate(item.date)],
             ['Covers', item.for],
             ['Method', item.method],
             ['Reference', item.ref || '—'],
         ]));
         // Match the payment to its invoice so it can be downloaded
-        currentInvoice = invoices.find(i => i.unit === item.unit && PERIOD === item.for) || null;
+        currentInvoice = invoices.find(i => i.leaseId === item.leaseId && PERIOD === item.for) || null;
     } else {
         $('detail-title').textContent = item.no;
         body.append(section('Invoice', [
@@ -228,13 +291,16 @@ function openDetail(kind, item) {
         currentInvoice = item;
     }
 
-    body.append(section('Tenant & Lease', [
+    const leaseRows = [
         ['Tenant', l.name],
         ['Unit', l.unit],
-        ['Lease type', l.type],
+        ['Property', l.address || '—'],
         ['Lease term', l.start + ' → ' + l.end],
         ['Monthly rent', peso(l.rent)],
-    ]));
+    ];
+    if (l.deposit != null) leaseRows.push(['Deposit', peso(l.deposit)]);
+    leaseRows.push(['Lease document', l.doc || '—', true]);
+    body.append(section('Tenant & Lease', leaseRows));
 
     $('detail-download').hidden = !currentInvoice;
     detailModal.hidden = false;
@@ -279,6 +345,7 @@ const recordForm  = $('record-form');
 const recordError = $('record-error');
 
 function chipGroup(container, name, items, onPick) {
+    container.innerHTML = '';
     items.forEach(([value, label]) => {
         const lab = document.createElement('label');
         lab.className = 'opt-chip';
@@ -292,12 +359,13 @@ function chipGroup(container, name, items, onPick) {
     });
 }
 
-chipGroup($('tenant-chips'), 'unit', leases.map(l => [l.unit, `Unit ${l.unit} · ${l.name}`]), unit => {
-    recordForm.elements.amount.value = leaseOf(unit).rent;   // default to the monthly rent
-});
+// Tenant chips come from the active leases, so they are rebuilt after every load
+function buildTenantChips() {
+    chipGroup($('tenant-chips'), 'unit', leases.map(l => [l.unit, `Unit ${l.unit} · ${l.name}`]), unit => {
+        recordForm.elements.amount.value = leaseOf(unit).rent;   // default to the monthly rent
+    });
+}
 chipGroup($('method-chips'), 'method', METHODS.map(m => [m, m]));
-
-const todayISO = () => new Date().toISOString().slice(0, 10);
 
 $('record-btn').addEventListener('click', () => {
     recordForm.reset();
@@ -311,7 +379,7 @@ recordModal.addEventListener('click', e => { if (e.target === recordModal) recor
 
 function showError(msg) { recordError.textContent = msg; recordError.hidden = false; }
 
-recordForm.addEventListener('submit', e => {
+recordForm.addEventListener('submit', async e => {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(recordForm));
     if (!d.unit)   return showError('Choose a tenant.');
@@ -320,23 +388,24 @@ recordForm.addEventListener('submit', e => {
     const amount = Number(d.amount);
     if (!(amount > 0)) return showError('Enter a valid amount.');
 
-    // When Firebase is connected, save this to Firestore instead of just the local arrays.
-    payments.push({
-        id: Date.now(),
-        unit: d.unit,
-        date: d.date,
-        for: PERIOD,
-        method: d.method,
-        ref: (d.ref || '').trim(),
-        amount,
-    });
-
-    // A payment that covers the rent clears the tenant's overdue invoice
-    const inv = invoices.find(i => i.unit === d.unit);
-    if (inv && amount >= leaseOf(d.unit).rent) inv.status = 'paid';
-
-    recordModal.hidden = true;
-    renderAll();
+    const saveBtn = recordForm.querySelector('.btn-primary');
+    saveBtn.disabled = true;
+    try {
+        await recordPayment({
+            leaseId: leaseOf(d.unit).id,
+            amount,
+            paymentDate: d.date,
+            paymentMethod: d.method,
+            transactionReference: (d.ref || '').trim(),
+        });
+        recordModal.hidden = true;
+        await loadData();   // reload so the table, invoices and totals all match the database
+    } catch (err) {
+        console.error(err);
+        showError('Could not save the payment: ' + (err.message || err));
+    } finally {
+        saveBtn.disabled = false;
+    }
 });
 
 // ---------- Escape closes modals ----------
@@ -346,7 +415,10 @@ document.addEventListener('keydown', e => {
     detailModal.hidden = true;
 });
 
-// ---------- Start ----------
+// ---------- Logout ----------
+document.querySelector('.logout-btn')?.addEventListener('click', logout);
+
+// ---------- Load + render ----------
 function renderAll() {
     renderSummary();
     renderPayments();
@@ -354,4 +426,19 @@ function renderAll() {
     lucide.createIcons();
 }
 
-renderAll();
+async function loadData() {
+    try {
+        const [rawLeases, rawPayments] = await Promise.all([listLeases(), listPayments()]);
+        buildData(rawLeases, rawPayments);
+        loadError = '';
+    } catch (err) {
+        console.error(err);
+        loadError = 'Could not load payments: ' + (err.message || err);
+    }
+    buildTenantChips();
+    renderAll();
+}
+
+// ---------- Start ----------
+await requireLogin();
+await loadData();

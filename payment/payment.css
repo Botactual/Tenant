@@ -300,3 +300,21 @@
     border: none;
     border-radius: 0;
 }
+
+/* Center the "no payments / no invoices" text in the table area */
+.pay-table-wrap { position: relative; }
+
+.pay-table-wrap .leases-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    color: #92949c;
+    pointer-events: none;
+}
+
+.pay-table-wrap .leases-empty[hidden] { display: none; }
