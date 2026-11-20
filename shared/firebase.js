@@ -102,3 +102,17 @@ export async function recordPayment({ leaseId, amount, paymentDate, paymentMetho
     })
   );
 }
+
+
+// Tenant portal: sends a new maintenance request for a property.
+export async function createMaintenanceRequest({ title, description, priorityLevel, propertyId }) {
+  await executeMutation(
+    mutationRef(dc, "CreateMaintenanceRequest", {
+      title,
+      description,
+      status: "open",
+      propertyId,
+      ...(priorityLevel ? { priorityLevel } : {}),
+    })
+  );
+}

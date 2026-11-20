@@ -3,29 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#464646">
-    <title>Tenēre - Home</title>
+    <meta name="theme-color" content="#f6f8fc">
+    <title>Tenēre - Inbox</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="tmobile.css">
+    <link rel="stylesheet" href="portal.css">
 </head>
-<body>
+<body class="portal">
 
-    <main class="auth-wrap">
-        <div class="brand">
-            <span class="brand-name">Tenēre</span>
-            <span class="brand-tag">Tenant Portal</span>
+    <div class="app">
+
+        <!-- ============ INBOX ============ -->
+        <div id="list-view">
+            <header class="topbar">
+                <div class="search-pill">
+                    <button type="button" class="icon-btn" id="menu-btn" aria-label="Menu">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
+                    <input type="search" id="search" placeholder="Search your inbox" autocomplete="off" autocapitalize="none">
+                    <button type="button" class="avatar-btn" id="avatar-btn" aria-label="Account"><span id="avatar-letter">T</span></button>
+                </div>
+            </header>
+
+            <div class="folder-row">
+                <span class="folder-title" id="folder-title">Inbox</span>
+                <button type="button" class="icon-btn small" id="refresh-btn" aria-label="Refresh">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+                </button>
+            </div>
+
+            <ul class="mail-list" id="mail-list"></ul>
+            <p class="empty" id="empty">Loading…</p>
+
+            <button type="button" class="fab" id="compose-btn" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                Compose
+            </button>
         </div>
 
-        <div class="auth-card">
-            <h1 class="auth-title">WELCOME</h1>
-            <p class="home-email" id="home-email"></p>
-            <p class="popup-text">You're signed in. Your tenant pages are coming soon.</p>
-            <button type="button" class="auth-submit-btn" id="logout-btn">LOG OUT</button>
-        </div>
-    </main>
+        <!-- ============ OPENED MESSAGE ============ -->
+        <section class="detail" id="detail-view" hidden>
+            <div class="detail-bar">
+                <button type="button" class="icon-btn" id="back-btn" aria-label="Back">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+                </button>
+            </div>
+            <h1 class="d-subject" id="d-subject"></h1>
+            <div class="d-from">
+                <span class="avatar-icon" id="d-avatar"></span>
+                <div class="d-from-text">
+                    <div class="d-from-name" id="d-from"></div>
+                    <div class="d-from-to">to me</div>
+                </div>
+                <span class="tag" id="d-tag" hidden></span>
+                <span class="d-time" id="d-time"></span>
+            </div>
+            <p class="d-body" id="d-body"></p>
+            <div class="steps" id="d-steps" hidden></div>
+            <div class="d-card" id="d-rows"></div>
+        </section>
 
+    </div>
+
+    <!-- ============ MENU DRAWER ============ -->
+    <div class="scrim" id="scrim" hidden></div>
+    <nav class="drawer" id="drawer" aria-hidden="true">
+        <div class="drawer-brand">
+            <strong>Tenēre</strong>
+            <span>Tenant Portal</span>
+            <span class="drawer-unit" id="drawer-unit"></span>
+        </div>
+        <button type="button" class="folder-btn active" data-folder="inbox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+            Inbox <span class="count" data-count="inbox"></span>
+        </button>
+        <button type="button" class="folder-btn" data-folder="rent">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>
+            Rent &amp; invoices <span class="count" data-count="rent"></span>
+        </button>
+        <button type="button" class="folder-btn" data-folder="maintenance">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            Maintenance <span class="count" data-count="maintenance"></span>
+        </button>
+        <button type="button" class="folder-btn" data-folder="notices">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            Notices <span class="count" data-count="notices"></span>
+        </button>
+    </nav>
+
+    <!-- ============ ACCOUNT MENU ============ -->
+    <div class="account-menu" id="account-menu" hidden>
+        <div class="avatar-big" id="menu-avatar"></div>
+        <div class="menu-name" id="menu-name"></div>
+        <div class="menu-sub" id="menu-email"></div>
+        <div class="menu-sub" id="menu-unit"></div>
+        <button type="button" class="btn-outline" id="logout-btn">Log out</button>
+    </div>
+
+    <!-- ============ COMPOSE (new maintenance request) ============ -->
+    <div class="sheet" id="compose-sheet" hidden>
+        <div class="sheet-bar">
+            <button type="button" class="icon-btn" id="compose-close" aria-label="Close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+            <h2 class="sheet-title">New request</h2>
+            <button type="submit" form="compose-form" class="send-btn" id="send-btn">
+                Send
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>
+            </button>
+        </div>
+
+        <form class="sheet-form" id="compose-form" novalidate>
+            <div class="field">
+                <label>To</label>
+                <span class="static">Landlord · <span id="compose-unit"></span></span>
+            </div>
+            <div class="field">
+                <label for="c-title">Subject</label>
+                <input type="text" id="c-title" name="title" placeholder="e.g. Leaking kitchen faucet" maxlength="120" autocomplete="off">
+            </div>
+            <div class="chips">
+                <span class="chips-label">Priority</span>
+                <label class="chip"><input type="radio" name="priority" value="low"><span>Low</span></label>
+                <label class="chip"><input type="radio" name="priority" value="medium" checked><span>Medium</span></label>
+                <label class="chip"><input type="radio" name="priority" value="high"><span>High</span></label>
+            </div>
+            <p class="sheet-error" id="compose-error" role="alert"></p>
+            <textarea id="c-desc" name="description" placeholder="Describe the problem…"></textarea>
+        </form>
+    </div>
+
+    <div class="snackbar" id="snackbar" role="status"></div>
+
+    <!-- Shown instead of the page on desktop-sized screens -->
     <div class="desktop-block">
         <div class="brand">
             <span class="brand-name">Tenēre</span>
@@ -37,23 +149,6 @@
         </div>
     </div>
 
-    <script type="module">
-        import { auth } from "../shared/firebase.js";
-        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
-
-        // Not signed in? Back to the tenant login page.
-        onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                window.location.href = "login.html";
-                return;
-            }
-            document.getElementById("home-email").textContent = user.email || "";
-        });
-
-        document.getElementById("logout-btn").addEventListener("click", async () => {
-            await signOut(auth);
-            window.location.href = "login.html";
-        });
-    </script>
+    <script type="module" src="home.js"></script>
 </body>
 </html>
