@@ -1,5 +1,4 @@
-import { requireLogin, listLeases, listPayments, listMaintenance } from '../shared/firebase.js';
-
+import { requireLogin, logout, listLeases, listPayments, listMaintenance } from '../shared/firebase.js';
 lucide.createIcons();
 
 // ---------- Data ----------
@@ -339,7 +338,8 @@ ddMenu.querySelectorAll('li').forEach(li => {
 
 document.addEventListener('click', () => setDropdown(false));
 document.addEventListener('keydown', e => { if (e.key === 'Escape') setDropdown(false); });
-
+// ---------- Logout ----------
+document.querySelector('.logout-btn')?.addEventListener('click', logout);
 // ---------- Export CSV ----------
 const csvCell = v => '"' + String(v).replace(/"/g, '""') + '"';
 

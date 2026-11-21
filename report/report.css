@@ -293,6 +293,16 @@
 .rep-table .owed  { color: #f0b08a; font-weight: 500; }
 .rep-table-wrap { overflow-x: auto; }
 
+/* Unit number next to the tenant name: plain white text, no box */
+.rep-table .unit-chip {
+    min-width: 0;
+    padding: 0;
+    color: #ffffff;
+    background: none;
+    border: none;
+    border-radius: 0;
+}
+
 /* ---------- Maintenance list ---------- */
 .issue-list {
     list-style: none;

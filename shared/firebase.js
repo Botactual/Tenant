@@ -88,6 +88,14 @@ export async function addTenantWithLease({ property, tenant, lease }) {
   );
 }
 
+// Dashboard > tenant details > Edit. Each object must include the row's own `id`.
+// A field that is left out stays as it is; a field sent as null is cleared (optional columns only).
+export async function updateTenantAndLease({ property, tenant, lease }) {
+  await executeMutation(mutationRef(dc, "UpdateProperty", property));
+  await executeMutation(mutationRef(dc, "UpdateTenant", tenant));
+  await executeMutation(mutationRef(dc, "UpdateLease", lease));
+}
+
 // Saves a payment against a lease (status is always "paid" when recorded by hand).
 export async function recordPayment({ leaseId, amount, paymentDate, paymentMethod, transactionReference }) {
   const opt = (key, value) => (value === "" || value == null ? {} : { [key]: value });

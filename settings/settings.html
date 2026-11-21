@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings</title>
+    <!-- Google Fonts: Rubik -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Lucide Icons Library -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="../shared/dashstyling.css">
+    <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+    <div class="dashboard-container">
+
+        <aside class="sidebar flex-column justify-between">
+            <nav class="sidebar-nav">
+                <ul class="nav-list flex-column gap-xs">
+                    <li>
+                        <a href="../dashboard/dashboard.html" class="nav-item flex-row align-center gap-sm">
+                            <i data-lucide="layout-dashboard"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../report/report.html" class="nav-item flex-row align-center gap-sm">
+                            <i data-lucide="bar-chart-3"></i>
+                            <span>Report</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../messages/messages.html" class="nav-item flex-row align-center gap-sm">
+                            <i data-lucide="mail"></i>
+                            <span>Messages</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../payment/payment.html" class="nav-item flex-row align-center gap-sm">
+                            <i data-lucide="credit-card"></i>
+                            <span>Payment</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <hr class="nav-divider">
+                <a href="settings.html" class="nav-item active flex-row align-center gap-sm">
+                    <i data-lucide="settings"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="set-main">
+
+            <!-- ============ TOOLBAR ============ -->
+            <div class="set-toolbar">
+                <div class="set-topbar">
+                    <button type="button" class="profile-btn" aria-label="Profile">
+                        <i data-lucide="user-round"></i>
+                    </button>
+                    <button type="button" class="logout-btn" id="top-logout" aria-label="Log out">
+                        <i data-lucide="log-out"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ============ PANEL ============ -->
+            <section class="set-panel">
+                <div class="set-inner">
+
+                    <div class="set-head">
+                        <h1 class="set-title">Settings</h1>
+                        <span class="set-sub" id="set-email"></span>
+                    </div>
+
+                    <div class="set-scroll">
+
+                        <!-- Profile -->
+                        <section class="set-card">
+                            <h2 class="set-card-title"><i data-lucide="user-round"></i>Profile</h2>
+                            <form class="set-form" id="profile-form" novalidate>
+                                <label class="set-field">Display name
+                                    <input type="text" id="profile-name" maxlength="60" autocomplete="name" placeholder="Your name">
+                                </label>
+                                <label class="set-field">Email
+                                    <input type="email" id="profile-email" readonly>
+                                </label>
+                                <p class="set-msg" id="profile-msg" role="status"></p>
+                                <div class="set-actions">
+                                    <button type="submit" class="btn-primary" id="profile-save">Save profile</button>
+                                </div>
+                            </form>
+                        </section>
+
+                        <!-- Password -->
+                        <section class="set-card">
+                            <h2 class="set-card-title"><i data-lucide="lock"></i>Password</h2>
+                            <p class="set-note" id="pw-note" hidden></p>
+                            <form class="set-form" id="password-form" novalidate>
+                                <label class="set-field">Current password
+                                    <input type="password" id="pw-current" autocomplete="current-password">
+                                </label>
+                                <label class="set-field">New password
+                                    <input type="password" id="pw-new" autocomplete="new-password" placeholder="At least 6 characters">
+                                </label>
+                                <label class="set-field">Confirm new password
+                                    <input type="password" id="pw-confirm" autocomplete="new-password">
+                                </label>
+                                <p class="set-msg" id="password-msg" role="status"></p>
+                                <div class="set-actions">
+                                    <button type="submit" class="btn-primary" id="pw-save">Change password</button>
+                                </div>
+                            </form>
+                        </section>
+
+                        <!-- Preferences -->
+                        <section class="set-card">
+                            <h2 class="set-card-title"><i data-lucide="sliders-horizontal"></i>Preferences</h2>
+                            <form class="set-form" id="pref-form" novalidate>
+                                <label class="set-field">Rent due day of the month (1–28)
+                                    <input type="number" id="pref-due" min="1" max="28" step="1" inputmode="numeric">
+                                </label>
+
+                                <div class="set-field">
+                                    <span>Default payment method</span>
+                                    <div class="chip-row" id="pref-methods">
+                                        <label class="set-chip"><input type="radio" name="method" value="Cash"><span>Cash</span></label>
+                                        <label class="set-chip"><input type="radio" name="method" value="GCash"><span>GCash</span></label>
+                                        <label class="set-chip"><input type="radio" name="method" value="Bank Transfer"><span>Bank Transfer</span></label>
+                                    </div>
+                                </div>
+
+                                <p class="set-note">Saved in this browser and used on the Payment page.</p>
+                                <p class="set-msg" id="pref-msg" role="status"></p>
+                                <div class="set-actions">
+                                    <button type="button" class="btn-ghost" id="pref-reset">Reset</button>
+                                    <button type="submit" class="btn-primary" id="pref-save">Save preferences</button>
+                                </div>
+                            </form>
+                        </section>
+
+                        <!-- Data + session -->
+                        <section class="set-card">
+                            <h2 class="set-card-title"><i data-lucide="database"></i>Data &amp; session</h2>
+
+                            <div class="set-row">
+                                <div class="set-row-text">
+                                    <p class="set-row-title">Export all data</p>
+                                    <p class="set-note">Download every tenant, lease and payment as a CSV file.</p>
+                                </div>
+                                <button type="button" class="btn-ghost" id="export-btn">Export CSV</button>
+                            </div>
+                            <p class="set-msg" id="export-msg" role="status"></p>
+
+                            <div class="set-row">
+                                <div class="set-row-text">
+                                    <p class="set-row-title">Log out</p>
+                                    <p class="set-note">Sign out of this device.</p>
+                                </div>
+                                <button type="button" class="btn-ghost btn-red" id="logout-btn">Log out</button>
+                            </div>
+                        </section>
+
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script type="module" src="settings.js"></script>
+</body>
+</html>

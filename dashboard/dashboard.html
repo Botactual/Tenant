@@ -271,7 +271,7 @@
         </form>
     </div>
 
-    <!-- ============ TENANT DETAILS MODAL ============ -->
+    <!-- ============ TENANT DETAILS MODAL (view + edit) ============ -->
     <div class="modal-backdrop" id="detail-modal" hidden>
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="detail-name">
             <div class="detail-head">
@@ -284,8 +284,13 @@
 
             <div class="modal-scroll" id="detail-body"></div>
 
+            <p class="modal-error" id="detail-error" hidden></p>
+
             <div class="modal-actions">
                 <button type="button" class="btn-ghost" id="detail-close">Close</button>
+                <button type="button" class="btn-primary" id="detail-edit">Edit</button>
+                <button type="button" class="btn-ghost" id="detail-cancel" hidden>Cancel</button>
+                <button type="submit" form="detail-form" class="btn-primary" id="detail-save" hidden>Save changes</button>
             </div>
         </div>
     </div>

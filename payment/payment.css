@@ -202,11 +202,10 @@
 .pay-table-wrap::-webkit-scrollbar { width: 8px; }
 .pay-table-wrap::-webkit-scrollbar-thumb { background: #5a5c62; border-radius: 8px; }
 
-/* Table fills the whole panel: full width, rows stretch to use the height */
-.pay-table-wrap .leases-table { width: 100%; height: 100%; }
+/* Full width, but rows always keep the same size: searching or filtering down
+   to a few rows must not stretch them to fill the panel (applies to both tables) */
+.pay-table-wrap .leases-table { width: 100%; height: auto; }
 
-/* Invoices: rows keep a fixed size, so filtering to a few doesn't stretch them */
-#invoices-view .leases-table { height: auto; }
 .pay-table-wrap .leases-table thead th { height: 44px; }
 .pay-table-wrap .leases-table td { height: 54px; }
 .pay-table-wrap .muted  { color: #92949c; }

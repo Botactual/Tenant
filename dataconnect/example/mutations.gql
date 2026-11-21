@@ -75,3 +75,53 @@ mutation CreateMaintenanceRequest(
     property: { id: $propertyId }
   })
 }
+
+# ---------- Edits (Dashboard > tenant details > Edit) ----------
+# A variable that is left out is not changed. A variable sent as null clears an optional column.
+
+mutation UpdateProperty(
+  $id: UUID!
+  $name: String
+  $address: String
+  $status: String
+) @auth(level: USER) {
+  property_update(id: $id, data: { name: $name, address: $address, status: $status })
+}
+
+mutation UpdateTenant(
+  $id: UUID!
+  $firstName: String
+  $lastName: String
+  $email: String
+  $phoneNumber: String
+  $emergencyContact: String
+  $moveInDate: Date
+  $isArchived: Boolean
+) @auth(level: USER) {
+  tenant_update(id: $id, data: {
+    firstName: $firstName
+    lastName: $lastName
+    email: $email
+    phoneNumber: $phoneNumber
+    emergencyContact: $emergencyContact
+    moveInDate: $moveInDate
+    isArchived: $isArchived
+  })
+}
+
+mutation UpdateLease(
+  $id: UUID!
+  $startDate: Date
+  $endDate: Date
+  $monthlyRent: Float
+  $depositAmount: Float
+  $leaseDocumentUrl: String
+) @auth(level: USER) {
+  lease_update(id: $id, data: {
+    startDate: $startDate
+    endDate: $endDate
+    monthlyRent: $monthlyRent
+    depositAmount: $depositAmount
+    leaseDocumentUrl: $leaseDocumentUrl
+  })
+}

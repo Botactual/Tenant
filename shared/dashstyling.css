@@ -1,3 +1,9 @@
+/* Outer panel colour used behind every page's content (darker than before: was #3F3F43) */
+:root {
+    --foundation: #333438;
+    --panel: #37383c;          /* the outlined panel on top of it (was #404245) */
+}
+
 body {
     background-color: #35363B;
     margin: 0;
@@ -108,7 +114,7 @@ html, body {
 .foundation-panel {
     --bottom-space: 200px;
     position: relative;
-    background-color: #3F3F43;
+    background-color: var(--foundation);
     border-radius: 42px;
     padding: 10px;
     display: flex;
@@ -123,7 +129,7 @@ html, body {
 
 /* ---------- Inner panel: Current Leases ---------- */
 .inner-custom-panel {
-    background-color: #404245;
+    background-color: var(--panel);
     border-radius: 34px;
     width: 1050px;
     height: 100%;
@@ -397,9 +403,9 @@ html, body {
 
 .lease-row[hidden] { display: none; }
 
-/* Overdue rows get an amber edge */
+/* Overdue rows get a red edge */
 .lease-row.is-overdue td:first-child {
-    box-shadow: inset 3px 0 0 #fbbf24;
+    box-shadow: inset 3px 0 0 #f87171;
 }
 
 .tenant-cell {
@@ -444,9 +450,9 @@ html, body {
 }
 
 .status-badge.overdue {
-    color: #fbbf24;
-    background-color: rgba(251, 191, 36, 0.12);
-    border: 1px solid rgba(251, 191, 36, 0.6);
+    color: #f87171;
+    background-color: rgba(248, 113, 113, 0.12);
+    border: 1px solid rgba(248, 113, 113, 0.6);
 }
 
 .leases-empty {
@@ -878,7 +884,7 @@ html, body {
     padding: 14px 22px 16px;
     display: flex;
     flex-direction: column;
-    background-color: #3F3F43;
+    background-color: var(--foundation);
     border: 1px solid #4b4d52;
     border-radius: 28px;
     overflow: hidden;
@@ -1031,4 +1037,19 @@ html, body {
     padding: 1px 10px;
     font-size: 0.66rem;
     line-height: 1.5;
+}
+
+/* ---------- Foundation square on the other pages ---------- */
+body .pay-panel,
+body .rep-panel,
+body .msg-panel,
+body .set-panel {
+    background-color: var(--foundation);
+}
+
+body .pay-inner,
+body .rep-inner,
+body .msg-inner,
+body .set-inner {
+    background-color: var(--panel);
 }

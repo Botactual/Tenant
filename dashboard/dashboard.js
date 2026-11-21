@@ -1,4 +1,4 @@
-import { requireLogin, logout, listLeases, listPayments, addTenantWithLease } from '../shared/firebase.js';
+import { requireLogin, logout, listLeases, listPayments, addTenantWithLease, updateTenantAndLease } from '../shared/firebase.js';
 
 lucide.createIcons();
 
@@ -110,11 +110,18 @@ function applyFilters() {
 statusSelect.addEventListener('change', applyFilters);
 unitSelect.addEventListener('change', applyFilters);
 
-// ---------- Tenant details popup ----------
+// ---------- Tenant details popup (view + edit) ----------
 const leaseById   = new Map();
 const detailModal = document.getElementById('detail-modal');
 const detailBody  = document.getElementById('detail-body');
+const detailEditBtn   = document.getElementById('detail-edit');
+const detailCloseBtn  = document.getElementById('detail-close');
+const detailCancelBtn = document.getElementById('detail-cancel');
+const detailSaveBtn   = document.getElementById('detail-save');
+const detailErrorEl   = document.getElementById('detail-error');
 let lastRow = null;
+let currentLease = null;
+let editing = false;
 
 function detailSection(title, fields) {
     const sec = document.createElement('div');
@@ -146,10 +153,26 @@ function detailSection(title, fields) {
     return sec;
 }
 
-function openDetail(row) {
-    const lease = leaseById.get(row.dataset.leaseId);
-    if (!lease) return;
-    lastRow = row;
+// Switches the buttons between view mode (Close + Edit) and edit mode (Cancel + Save changes)
+function setEditing(on) {
+    editing = on;
+    detailEditBtn.hidden   = on;
+    detailCloseBtn.hidden  = on;
+    detailCancelBtn.hidden = !on;
+    detailSaveBtn.hidden   = !on;
+    detailErrorEl.hidden   = true;
+}
+
+function showDetailError(msg) {
+    detailErrorEl.textContent = msg;
+    detailErrorEl.hidden = false;
+}
+
+// Read-only view of the lease currently open
+function renderDetailView() {
+    const lease = currentLease;
+    const row = lastRow;
+    if (!lease || !row) return;
 
     const t = lease.tenant || {};
     const p = lease.property || {};
@@ -184,15 +207,227 @@ function openDetail(row) {
             ['Lease document', lease.leaseDocumentUrl],
         ])
     );
-
     detailBody.scrollTop = 0;
+}
+
+function openDetail(row) {
+    const lease = leaseById.get(row.dataset.leaseId);
+    if (!lease) return;
+    lastRow = row;
+    currentLease = lease;
+    setEditing(false);
+    renderDetailView();
     detailModal.hidden = false;
 }
 
 function closeDetail() {
+    setEditing(false);
     detailModal.hidden = true;
     if (lastRow) lastRow.focus();
 }
+
+// ----- Edit form (built with the DOM so values can never inject HTML) -----
+function labelInput(text, name, value, opts = {}) {
+    const lab = document.createElement('label');
+    lab.append(text + ' ');
+    const input = document.createElement('input');
+    input.type = opts.type || 'text';
+    input.name = name;
+    input.value = value == null ? '' : value;
+    if (opts.required) input.required = true;
+    if (opts.placeholder) input.placeholder = opts.placeholder;
+    ['min', 'max', 'step'].forEach(k => { if (opts[k] != null) input[k] = opts[k]; });
+    lab.appendChild(input);
+    return lab;
+}
+
+function formRow(...labels) {
+    const r = document.createElement('div');
+    r.className = 'modal-row';
+    r.append(...labels);
+    return r;
+}
+
+function formSection(title, ...children) {
+    const s = document.createElement('div');
+    s.className = 'form-section';
+    const h = document.createElement('h4');
+    h.textContent = title;
+    s.append(h, ...children);
+    return s;
+}
+
+function startEdit() {
+    const lease = currentLease;
+    if (!lease) return;
+    const t = lease.tenant || {};
+    const p = lease.property || {};
+    const day = v => (v ? String(v).slice(0, 10) : '');
+
+    // "Unit 03 – Sunrise" -> unit 3, custom name "Sunrise"
+    const unitMatch  = /^Unit\s+(\d+)/i.exec(p.name || '');
+    const customName = (p.name || '').replace(/^Unit\s+\d+\s*(?:[–-]\s*)?/i, '');
+
+    // Property status chips
+    const statuses = ['Occupied', 'Vacant', 'Under Maintenance'];
+    if (p.status && !statuses.includes(p.status)) statuses.push(p.status);
+    const chips = document.createElement('div');
+    chips.className = 'chip-row';
+    statuses.forEach(s => {
+        const lab = document.createElement('label');
+        lab.className = 'opt-chip';
+        const input = document.createElement('input');
+        input.type = 'radio';
+        input.name = 'propertyStatus';
+        input.value = s;
+        input.checked = s === (p.status || 'Occupied');
+        const span = document.createElement('span');
+        span.textContent = s;
+        lab.append(input, span);
+        chips.appendChild(lab);
+    });
+    const statusField = document.createElement('div');
+    statusField.className = 'field';
+    const statusLabel = document.createElement('span');
+    statusLabel.className = 'field-label';
+    statusLabel.textContent = 'Property status';
+    statusField.append(statusLabel, chips);
+
+    // Archived checkbox
+    const arch = document.createElement('label');
+    arch.className = 'check-row';
+    const archInput = document.createElement('input');
+    archInput.type = 'checkbox';
+    archInput.name = 'isArchived';
+    archInput.checked = !!t.isArchived;
+    const archText = document.createElement('span');
+    archText.textContent = 'Archived tenant (removes them from the list)';
+    arch.append(archInput, archText);
+
+    const editForm = document.createElement('form');
+    editForm.id = 'detail-form';
+    editForm.className = 'edit-form';
+    editForm.append(
+        formSection('Tenant',
+            formRow(
+                labelInput('First name', 'firstName', t.firstName, { required: true }),
+                labelInput('Last name', 'lastName', t.lastName, { required: true })),
+            formRow(
+                labelInput('Email', 'email', t.email, { type: 'email', required: true }),
+                labelInput('Phone number', 'phoneNumber', t.phoneNumber, { type: 'tel', required: true })),
+            formRow(
+                labelInput('Emergency contact (optional)', 'emergencyContact', t.emergencyContact),
+                labelInput('Move-in date (optional)', 'moveInDate', day(t.moveInDate), { type: 'date' })),
+            arch),
+        formSection('Property',
+            formRow(
+                labelInput('Unit', 'unit', unitMatch ? String(Number(unitMatch[1])) : '',
+                    { type: 'number', min: 1, max: 99, step: 1, required: true }),
+                labelInput('Property name (optional)', 'propertyName', customName)),
+            labelInput('Address', 'address', p.address, { required: true }),
+            statusField),
+        formSection('Lease',
+            formRow(
+                labelInput('Start date', 'startDate', day(lease.startDate), { type: 'date', required: true }),
+                labelInput('End date', 'endDate', day(lease.endDate), { type: 'date', required: true })),
+            formRow(
+                labelInput('Monthly rent (₱)', 'monthlyRent', lease.monthlyRent,
+                    { type: 'number', min: 0, step: 0.01, required: true }),
+                labelInput('Deposit amount (₱, optional)', 'depositAmount', lease.depositAmount,
+                    { type: 'number', min: 0, step: 0.01 })),
+            labelInput('Lease document URL (optional)', 'leaseDocumentUrl', lease.leaseDocumentUrl,
+                { type: 'url', placeholder: 'https://...' }))
+    );
+    editForm.addEventListener('submit', saveEdit);
+
+    detailBody.replaceChildren(editForm);
+    detailBody.scrollTop = 0;
+    setEditing(true);
+}
+
+function cancelEdit() {
+    setEditing(false);
+    renderDetailView();
+}
+
+async function saveEdit(e) {
+    e.preventDefault();
+    const lease = currentLease;
+    if (!lease) return;
+    const d = Object.fromEntries(new FormData(e.currentTarget));
+    detailErrorEl.hidden = true;
+
+    const firstName = d.firstName.trim();
+    const lastName  = d.lastName.trim();
+    const address   = d.address.trim();
+    if (!firstName || !lastName) return showDetailError('Enter the tenant’s first and last name.');
+    if (!address) return showDetailError('Enter the property address.');
+
+    const unitNum = Number(d.unit);
+    if (!Number.isInteger(unitNum) || unitNum < 1 || unitNum > 99) {
+        return showDetailError('Unit must be a whole number from 1 to 99.');
+    }
+    const unit = String(unitNum).padStart(2, '0');
+
+    // Another lease must not already be on this unit
+    const clash = [...tbody.querySelectorAll('.lease-row')]
+        .some(r => r.dataset.unit === unit && r.dataset.leaseId !== lease.id);
+    if (clash) return showDetailError(`Unit ${unit} already has a lease.`);
+
+    if (d.endDate < d.startDate) return showDetailError('End date must be after the start date.');
+
+    const rent = Number(d.monthlyRent);
+    if (!(rent >= 0) || d.monthlyRent === '') return showDetailError('Enter a valid monthly rent.');
+
+    const customName = d.propertyName.trim();
+
+    // Optional fields are sent as null when emptied, which clears them in the database
+    const property = {
+        id: lease.property.id,
+        name: `Unit ${unit}` + (customName ? ` – ${customName}` : ''),
+        address,
+        status: d.propertyStatus,
+    };
+    const tenant = {
+        id: lease.tenant.id,
+        firstName,
+        lastName,
+        email: d.email.trim(),
+        phoneNumber: d.phoneNumber.trim(),
+        isArchived: d.isArchived === 'on',
+        emergencyContact: d.emergencyContact.trim() || null,
+        moveInDate: d.moveInDate || null,
+    };
+    const leaseData = {
+        id: lease.id,
+        startDate: d.startDate,
+        endDate: d.endDate,
+        monthlyRent: rent,
+        depositAmount: d.depositAmount === '' ? null : Number(d.depositAmount),
+        leaseDocumentUrl: d.leaseDocumentUrl.trim() || null,
+    };
+
+    detailSaveBtn.disabled = true;
+    detailSaveBtn.textContent = 'Saving…';
+    try {
+        await updateTenantAndLease({ property, tenant, lease: leaseData });
+        await loadLeases();
+
+        // Show the saved details again (an archived tenant is no longer in the list)
+        const row = tbody.querySelector(`[data-lease-id="${lease.id}"]`);
+        if (row) openDetail(row);
+        else closeDetail();
+    } catch (err) {
+        console.error(err);
+        showDetailError('Could not save: ' + (err.message || err));
+    } finally {
+        detailSaveBtn.disabled = false;
+        detailSaveBtn.textContent = 'Save changes';
+    }
+}
+
+detailEditBtn.addEventListener('click', startEdit);
+detailCancelBtn.addEventListener('click', cancelEdit);
 
 // Row click (delegated, so newly added rows work too)
 tbody.addEventListener('click', e => {
@@ -204,9 +439,14 @@ tbody.addEventListener('keydown', e => {
     if (row && e.key === 'Enter') openDetail(row);
 });
 
-document.getElementById('detail-close').addEventListener('click', closeDetail);
-detailModal.addEventListener('click', e => { if (e.target === detailModal) closeDetail(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && !detailModal.hidden) closeDetail(); });
+detailCloseBtn.addEventListener('click', closeDetail);
+// While editing, clicking outside or pressing Escape must not throw the changes away by accident
+detailModal.addEventListener('click', e => { if (e.target === detailModal && !editing) closeDetail(); });
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || detailModal.hidden) return;
+    if (editing) cancelEdit();
+    else closeDetail();
+});
 
 // ---------- Load leases from the database ----------
 const fmtDate = v => new Date(v + 'T00:00:00Z').toLocaleDateString('en-US',
@@ -358,7 +598,7 @@ function renderNotifications(active, allLeases, payments, paidLeaseIds) {
     if (!items.length) {
         const li = document.createElement('li');
         li.className = 'notif-item';
-        li.innerHTML = '<div class="notif-text"><p class="notif-title">You\u2019re all caught up</p></div>';
+        li.innerHTML = '<div class="notif-text"><p class="notif-title">You’re all caught up</p></div>';
         list.appendChild(li);
     }
 

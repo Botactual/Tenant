@@ -130,3 +130,85 @@
 #detail-modal .detail-label { color: #b7b9c0; flex: none; }
 #detail-modal .detail-value { color: #ffffff; text-align: right; word-break: break-word; }
 #detail-modal .detail-value a { color: #ffffff; text-decoration: underline; }
+
+
+/* ---------- Tenant details popup: edit mode ---------- */
+#detail-modal .edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+/* Labels stack normally in a section; only share width inside a row */
+#detail-modal .form-section > label { flex: none; }
+#detail-modal .modal-row > label    { flex: 1; }
+
+#detail-modal .field       { display: flex; flex-direction: column; gap: 6px; }
+#detail-modal .field-label { font-size: 0.78rem; color: #b7b9c0; }
+
+/* Archived checkbox */
+#detail-modal .check-row {
+    flex: none;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.84rem;
+    color: #d3d4da;
+    cursor: pointer;
+}
+
+#detail-modal .check-row input {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    accent-color: #ffffff;
+    cursor: pointer;
+}
+
+/* Property status chips */
+#detail-modal .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+
+#detail-modal .opt-chip {
+    position: relative;
+    flex: none;
+    flex-direction: row;
+    gap: 0;
+    cursor: pointer;
+}
+
+#detail-modal .opt-chip input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+#detail-modal .opt-chip span {
+    display: block;
+    padding: 5px 12px;
+    font-size: 0.76rem;
+    color: #d3d4da;
+    background: #35363B;
+    border: 1px solid #6b6f75;
+    border-radius: 999px;
+    transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+#detail-modal .opt-chip:hover span { border-color: #ffffff; }
+#detail-modal .opt-chip input:checked + span { color: #000000; background: #ffffff; border-color: #ffffff; }
+#detail-modal .opt-chip input:focus-visible + span { border-color: #ffffff; }
+
+
+/* ---------- Tenant list: unit number as plain white text, no box ---------- */
+.leases-table-wrap .unit-chip {
+    min-width: 0;
+    padding: 0;
+    color: #ffffff;
+    background: none;
+    border: none;
+    border-radius: 0;
+}
