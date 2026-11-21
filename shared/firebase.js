@@ -1,4 +1,5 @@
 // Shared Firebase setup: sign-in check, logout, and Data Connect (database) calls.
+// Photos/videos are uploaded to Cloudinary (Firebase Storage is no longer used).
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import {
   getAuth,
@@ -12,27 +13,23 @@ import {
   queryRef,
   mutationRef,
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-data-connect.js";
-import {
-  getStorage,
-  ref as storageRef,
-  uploadBytesResumable,
-  getDownloadURL,
-} from "https://www.gstatic.com/firebasejs/11.6.0/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBPquKkCNwtEOo9ehAK9TLq_K-_JgsDD8A",
   authDomain: "dashboard-572f3.firebaseapp.com",
   projectId: "dashboard-572f3",
   appId: "1:1074021870720:web:70522d384dc6ee27da8a65",
-  // Check this on Firebase console > Build > Storage. Older projects use "dashboard-572f3.appspot.com".
   storageBucket: "dashboard-572f3.firebasestorage.app",
 };
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-const storage = getStorage(app);
 
-// Limits for photos/videos attached to a request (storage.rules enforces the size too)
+// Cloudinary (unsigned uploads: only the cloud name and preset name are needed, never the API secret)
+const CLOUDINARY_CLOUD  = "snepjcae";
+const CLOUDINARY_PRESET = "tenconnect";
+
+// Limits for photos/videos attached to a request
 export const MAX_ATTACH_BYTES = 50 * 1024 * 1024;
 export const MAX_ATTACH_FILES = 5;
 
@@ -92,6 +89,11 @@ export async function listMaintenanceAttachments() {
   return res.data.maintenanceAttachments;
 }
 
+export async function listMessages() {
+  const res = await executeQuery(queryRef(dc, "ListMessages"));
+  return res.data.messages;
+}
+
 // ---------- Writes ----------
 // Creates the property, the tenant, then the lease that links them.
 export async function addTenantWithLease({ property, tenant, lease }) {
@@ -129,7 +131,6 @@ export async function recordPayment({ leaseId, amount, paymentDate, paymentMetho
   );
 }
 
-
 // Tenant portal: sends a new maintenance request for a property. Returns the new request's id.
 export async function createMaintenanceRequest({ title, description, priorityLevel, propertyId }) {
   const res = await executeMutation(
@@ -144,29 +145,44 @@ export async function createMaintenanceRequest({ title, description, priorityLev
   return res.data.maintenanceRequest_insert.id;
 }
 
-// Uploads one photo/video to Firebase Storage.
+// Uploads one photo/video to Cloudinary.
 // onProgress gets a number from 0 to 1. Resolves with the details to save in the database.
 export function uploadMaintenanceFile(file, propertyId, onProgress) {
-  const safeName = file.name.replace(/[^\w.\-]+/g, "_").slice(-80) || "file";
-  const rand = Math.random().toString(36).slice(2, 8);
-  const path = `maintenance/${propertyId}/${Date.now()}-${rand}-${safeName}`;
-  const task = uploadBytesResumable(storageRef(storage, path), file, { contentType: file.type });
-
   return new Promise((resolve, reject) => {
-    task.on(
-      "state_changed",
-      (snap) => { if (onProgress && snap.totalBytes) onProgress(snap.bytesTransferred / snap.totalBytes); },
-      reject,
-      async () => {
-        try {
-          const fileUrl = await getDownloadURL(task.snapshot.ref);
-          resolve({ fileName: file.name, fileUrl, contentType: file.type, sizeBytes: file.size });
-        } catch (err) {
-          reject(err);
-        }
+    const form = new FormData();
+    form.append("file", file);
+    form.append("upload_preset", CLOUDINARY_PRESET);
+    form.append("tags", `property-${propertyId}`);
+
+    const xhr = new XMLHttpRequest();
+    // "auto" lets Cloudinary accept both images and videos on one endpoint
+    xhr.open("POST", `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`);
+
+    xhr.upload.onprogress = (e) => {
+      if (onProgress && e.lengthComputable) onProgress(e.loaded / e.total);
+    };
+    xhr.onload = () => {
+      let res = {};
+      try { res = JSON.parse(xhr.responseText); } catch { /* not JSON */ }
+      if (xhr.status >= 200 && xhr.status < 300 && res.secure_url) {
+        resolve({
+          fileName: file.name,
+          fileUrl: res.secure_url,        // https link, which safeUrl() requires
+          contentType: file.type,
+          sizeBytes: file.size,
+        });
+      } else {
+        reject(new Error(res.error?.message || `Upload failed (${xhr.status})`));
       }
-    );
+    };
+    xhr.onerror = () => reject(new Error("Network error while uploading"));
+    xhr.send(form);
   });
+}
+
+// Landlord <-> tenant messages. sender is "landlord" (sent from the dashboard) or "tenant".
+export async function sendMessage({ propertyId, body, sender = "landlord" }) {
+  await executeMutation(mutationRef(dc, "CreateMessage", { propertyId, body, sender }));
 }
 
 // Links already-uploaded files to a request.
@@ -183,6 +199,3 @@ export async function addMaintenanceAttachments(requestId, list) {
     );
   }
 }
-
-const CLOUDINARY_CLOUD  = "snepjcae";
-const CLOUDINARY_PRESET = "tenconnect";

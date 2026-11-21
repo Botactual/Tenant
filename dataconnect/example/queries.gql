@@ -50,3 +50,13 @@ query ListMaintenanceAttachments @auth(level: USER) {
     request { id }
   }
 }
+
+query ListMessages @auth(level: USER) {
+  messages(orderBy: [{ sentAt: DESC }]) {
+    id
+    body
+    sender
+    sentAt
+    property { id }
+  }
+}

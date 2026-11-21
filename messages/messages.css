@@ -273,7 +273,7 @@
 .msg-row.unread { background: #4a4b50; }
 .msg-row.unread:hover { background: #525358; }
 
-/* unit badge (square) */
+/* unit number (no box) */
 .unit-badge {
     width: 52px;
     height: 52px;
@@ -284,8 +284,7 @@
     justify-content: center;
     line-height: 1.15;
     color: #d3d4da;
-    background: #55575c;
-    border-radius: 14px;
+    background: transparent;
 }
 
 .unit-badge span   { font-size: 0.56rem; font-weight: 500; letter-spacing: 0.06em; }
@@ -293,8 +292,8 @@
 
 .msg-row.unread .unit-badge,
 .unit-badge.is-unread {
-    color: #000000;
-    background: var(--gold);
+    color: var(--gold);
+    background: transparent;
 }
 
 .msg-content { min-width: 0; }
@@ -545,3 +544,48 @@
 }
 
 .msg-empty[hidden] { display: none; }
+
+/* ---------- Replies ---------- */
+.thread {
+    max-width: 70ch;
+    margin-top: 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.thread[hidden] { display: none; }
+
+.reply-item {
+    padding: 10px 14px;
+    background: #35363B;
+    border-radius: 14px;
+}
+
+.reply-meta { font-size: 0.7rem; color: #92949c; }
+.reply-body { margin-top: 2px; font-size: 0.9rem; line-height: 1.5; color: #e7e8ec; white-space: pre-wrap; }
+
+.reply-form {
+    max-width: 70ch;
+    margin-top: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.reply-form textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 10px 12px;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 0.9rem;
+    color: #ffffff;
+    background: #35363B;
+    border: 1px solid #6b6f75;
+    border-radius: 10px;
+    color-scheme: dark;
+}
+
+.reply-form textarea:focus { outline: none; border-color: #ffffff; }
+.reply-actions { display: flex; justify-content: flex-end; }

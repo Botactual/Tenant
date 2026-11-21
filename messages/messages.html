@@ -127,20 +127,30 @@
                             </button>
                         </div>
 
-                        <article class="detail">
-                            <header class="detail-head">
-                                <div class="unit-badge" id="detail-badge"><span>UNIT</span><strong></strong></div>
-                                <div class="detail-who">
-                                    <p class="detail-name" id="detail-name"></p>
-                                    <p class="detail-unit" id="detail-unit"></p>
-                                </div>
-                                <span class="msg-time" id="detail-time"></span>
-                            </header>
+                       <article class="detail">
+    <header class="detail-head">
+        <div class="unit-badge" id="detail-badge"><span>UNIT</span><strong></strong></div>
+        <div class="detail-who">
+            <p class="detail-name" id="detail-name"></p>
+            <p class="detail-unit" id="detail-unit"></p>
+        </div>
+        <span class="msg-time" id="detail-time"></span>
+    </header>
 
-                            <p class="detail-text" id="detail-text"></p>
+    <p class="detail-text" id="detail-text"></p>
 
-                            <div class="detail-media" id="detail-media" hidden></div>
-                        </article>
+    <div class="detail-media" id="detail-media" hidden></div>
+
+    <div class="thread" id="thread" hidden></div>
+
+    <form class="reply-form" id="reply-form">
+        <textarea id="reply-text" rows="3" placeholder="Reply to the tenant…"></textarea>
+        <p class="modal-error" id="reply-error" hidden></p>
+        <div class="reply-actions">
+            <button type="submit" class="btn-primary" id="reply-send">Send reply</button>
+        </div>
+    </form>
+</article>
                     </div>
 
                 </div>

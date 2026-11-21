@@ -43,11 +43,20 @@ type MaintenanceRequest @table {
 }
 
 # Photos and videos a tenant attaches to a maintenance request.
-# The file itself lives in Firebase Storage; this row keeps its link.
+# The file itself lives in Cloudinary; this row keeps its link.
 type MaintenanceAttachment @table {
   fileName: String!
   fileUrl: String!
   contentType: String!
   sizeBytes: Int
   request: MaintenanceRequest!
+}
+
+# Messages between the landlord (dashboard) and a tenant, tied to the tenant's property.
+# sender is "landlord" or "tenant".
+type Message @table {
+  body: String!
+  sender: String!
+  sentAt: Timestamp! @default(expr: "request.time")
+  property: Property!
 }

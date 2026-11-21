@@ -1,5 +1,5 @@
 import {
-  auth, unitOf, listLeases, listPayments, listMaintenance, listMaintenanceAttachments,
+  auth, unitOf, listLeases, listPayments, listMaintenance, listMaintenanceAttachments, listMessages,
   createMaintenanceRequest, addMaintenanceAttachments, uploadMaintenanceFile,
   MAX_ATTACH_BYTES, MAX_ATTACH_FILES,
 } from "../shared/firebase.js";
@@ -86,7 +86,7 @@ function markRead(it) {
 }
 
 // ---------- Build the inbox from the database ----------
-function buildItems(payments, requests, mediaByRequest) {
+function buildItems(payments, requests, mediaByRequest, landlordMessages = []) {
   const out = [];
   const l = me;
 
@@ -201,6 +201,25 @@ function buildItems(payments, requests, mediaByRequest) {
     });
   }
 
+  // 5) Messages from the landlord
+  landlordMessages.forEach((m) => {
+    out.push({
+      id: `msg-${m.id}`,
+      type: "notice",
+      cls: "t-info",
+      icon: ICON.bell,
+      from: "Landlord",
+      subject: "Message from your landlord",
+      preview: m.body,
+      time: fmtShort(m.sentAt),
+      sort: String(m.sentAt),
+      pin: 1,
+      tag: null,
+      body: m.body,
+      rows: [["From", "Landlord"], ["Unit", l.unit]],
+    });
+  });
+
   out.sort((a, b) => (b.pin - a.pin) || String(b.sort).localeCompare(String(a.sort)));
   return out;
 }
@@ -298,9 +317,13 @@ async function loadData() {
   lastLoad = Date.now();
   try {
     const [rawLeases, rawPayments, rawRequests] = await Promise.all([listLeases(), listPayments(), listMaintenance()]);
-    // Attachments are optional: the inbox still loads if that query isn't deployed yet
+    // Attachments and messages are optional: the inbox still loads if those queries aren't deployed yet
     const rawMedia = await listMaintenanceAttachments().catch((err) => {
       console.warn("Could not load attachments:", err);
+      return [];
+    });
+    const rawMessages = await listMessages().catch((err) => {
+      console.warn("Could not load messages:", err);
       return [];
     });
     const email = (user.email || "").trim().toLowerCase();
@@ -342,7 +365,11 @@ async function loadData() {
         mediaByRequest.get(id).push({ name: a.fileName, url: a.fileUrl, type: a.contentType });
       });
 
-      items = buildItems(payments, requests, mediaByRequest);
+      // messages your landlord sent to this unit
+      const fromLandlord = rawMessages.filter((m) =>
+        m.sender === "landlord" && m.property && m.property.id === mine.property.id);
+
+      items = buildItems(payments, requests, mediaByRequest, fromLandlord);
     }
     loadError = "";
   } catch (err) {

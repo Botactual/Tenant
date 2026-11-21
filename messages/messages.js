@@ -1,13 +1,17 @@
-import { requireLogin, logout, listLeases, listMaintenance, listMaintenanceAttachments, unitOf } from '../shared/firebase.js';
+import {
+    requireLogin, logout, listLeases, listMaintenance, listMaintenanceAttachments,
+    listMessages, sendMessage, unitOf,
+} from '../shared/firebase.js';
 
 lucide.createIcons();
 
 // ---------- Message data ----------
 // Incoming messages are the maintenance requests in the database. Each one is matched to the
 // tenant who leases that property, and carries any photos/videos the tenant attached.
-// Messages you send from Compose live only in this session until a messages table exists.
-let messages  = [];   // { id, name, unit, text, file, media, time, unread, outgoing? }
-let tenants   = [];   // recipients for Compose, one per active lease: { unit, name }
+// Messages you send (Compose or Reply) are saved in the database and show up in the tenant portal.
+let messages  = [];   // { id, propertyId, name, unit, text, file, media, time, unread, outgoing? }
+let tenants   = [];   // recipients for Compose, one per active lease: { unit, name, propertyId }
+let sent      = [];   // landlord messages from the database: { id, body, sentAt, propertyId }
 let loadError = '';
 
 // Which complaints this browser has already opened (the database has no read/unread field)
@@ -24,6 +28,9 @@ const STATUS_LABEL = { open: 'Open', progress: 'In progress', done: 'Resolved' }
 const isDone = s => /^(done|resolved|closed|completed)$/i.test(String(s || ''));
 const fmtShort = iso => new Date(String(iso).slice(0, 10) + 'T00:00:00Z').toLocaleDateString('en-US',
     { month: 'short', day: 'numeric', timeZone: 'UTC' });
+const fmtDay  = iso => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const fmtWhen = iso => new Date(iso).toLocaleString('en-US',
+    { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 
 // Only real https links are ever used for photos/videos
 const safeUrl = u => (/^https:\/\//i.test(u || '') ? u : '');
@@ -34,11 +41,15 @@ function timeLabel(r) {
     return STATUS_LABEL[key] || r.status || 'Open';
 }
 
-function buildData(leases, requests, attachments) {
+function buildData(leases, requests, attachments, landlordMessages) {
     const active = leases.filter(l => !l.tenant.isArchived);
 
     tenants = active
-        .map(l => ({ unit: unitOf(l), name: `${l.tenant.firstName} ${l.tenant.lastName}` }))
+        .map(l => ({
+            unit: unitOf(l),
+            name: `${l.tenant.firstName} ${l.tenant.lastName}`,
+            propertyId: l.property.id,
+        }))
         .sort((a, b) => a.unit.localeCompare(b.unit));
 
     // property id -> the lease (and so the tenant) for that property; active tenants win
@@ -63,6 +74,7 @@ function buildData(leases, requests, attachments) {
         const media = mediaByRequest.get(r.id) || [];
         return {
             id: r.id,
+            propertyId: r.property?.id,
             name: lease ? `${lease.tenant.firstName} ${lease.tenant.lastName}` : (r.property?.name || 'Unknown tenant'),
             unit: unitOf(r),
             text: r.description ? `${r.title} — ${r.description}` : r.title,
@@ -80,12 +92,32 @@ function buildData(leases, requests, attachments) {
         (a.done - b.done) ||
         (a.done ? b.resolved.localeCompare(a.resolved) : a.unit.localeCompare(b.unit)));
 
-    // Keep anything sent from Compose this session at the top
-    messages = [...messages.filter(m => m.outgoing), ...incoming];
+    // Messages you sent to tenants, newest first, kept at the top
+    sent = landlordMessages;
+    const outgoing = [...landlordMessages]
+        .sort((a, b) => String(b.sentAt).localeCompare(String(a.sentAt)))
+        .map(m => {
+            const lease = byProperty.get(m.propertyId);
+            return {
+                id: 'msg-' + m.id,
+                propertyId: m.propertyId,
+                name: lease ? `${lease.tenant.firstName} ${lease.tenant.lastName}` : 'Tenant',
+                unit: lease ? unitOf(lease) : '--',
+                text: m.body,
+                file: null,
+                media: [],
+                time: fmtDay(m.sentAt),
+                unread: false,
+                outgoing: true,
+            };
+        });
+
+    messages = [...outgoing, ...incoming];
 }
 
 // ---------- State + elements ----------
 const state = { query: '', filter: 'all' };
+let current = null;   // the message that is open in the detail view
 
 const listView   = document.getElementById('list-view');
 const detailView = document.getElementById('detail-view');
@@ -203,9 +235,38 @@ function mediaNode(x) {
     return box;
 }
 
+// The replies you have already sent to this tenant, oldest first
+const threadEl = document.getElementById('thread');
+
+function renderThread() {
+    threadEl.replaceChildren();
+    const list = current
+        ? sent.filter(s => s.propertyId === current.propertyId)
+              .sort((a, b) => String(a.sentAt).localeCompare(String(b.sentAt)))
+        : [];
+
+    list.forEach(s => {
+        const item = document.createElement('div');
+        item.className = 'reply-item';
+
+        const meta = document.createElement('p');
+        meta.className = 'reply-meta';
+        meta.textContent = 'You · ' + fmtWhen(s.sentAt);
+
+        const body = document.createElement('p');
+        body.className = 'reply-body';
+        body.textContent = s.body;
+
+        item.append(meta, body);
+        threadEl.appendChild(item);
+    });
+    threadEl.hidden = !list.length;
+}
+
 function openMessage(id) {
     const m = messages.find(x => String(x.id) === String(id));
     if (!m) return;
+    current = m;
     m.unread = false;
     if (!m.outgoing) { readIds.add(m.id); saveRead(); }
 
@@ -223,6 +284,10 @@ function openMessage(id) {
     });
     mediaBox.hidden = !mediaBox.children.length;
 
+    replyText.value = '';
+    replyError.hidden = true;
+    renderThread();
+
     listView.hidden = true;
     detailView.hidden = false;
     lucide.createIcons();
@@ -231,6 +296,7 @@ function openMessage(id) {
 document.getElementById('back-btn').addEventListener('click', () => {
     // stop any video that is still playing
     document.querySelectorAll('#detail-media video').forEach(v => v.pause());
+    current = null;
     detailView.hidden = true;
     listView.hidden = false;
     renderList();
@@ -244,6 +310,43 @@ listEl.addEventListener('click', e => {
 listEl.addEventListener('keydown', e => {
     const row = e.target.closest('.msg-row');
     if (row && e.key === 'Enter') openMessage(row.dataset.id);
+});
+
+// ---------- Reply (inside an opened message) ----------
+const replyForm  = document.getElementById('reply-form');
+const replyText  = document.getElementById('reply-text');
+const replyError = document.getElementById('reply-error');
+const replyBtn   = document.getElementById('reply-send');
+
+replyForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const body = replyText.value.trim();
+
+    if (!current || !current.propertyId) {
+        replyError.textContent = 'This message has no tenant to reply to.';
+        replyError.hidden = false;
+        return;
+    }
+    if (!body) {
+        replyError.textContent = 'Write a reply first.';
+        replyError.hidden = false;
+        return;
+    }
+
+    replyBtn.disabled = true;
+    replyError.hidden = true;
+    try {
+        await sendMessage({ propertyId: current.propertyId, body });
+        replyText.value = '';
+        await loadData();      // pulls the new message in
+        renderThread();
+    } catch (err) {
+        console.error(err);
+        replyError.textContent = 'Could not send: ' + (err.message || err);
+        replyError.hidden = false;
+    } finally {
+        replyBtn.disabled = false;
+    }
 });
 
 // ---------- Search ----------
@@ -331,7 +434,7 @@ document.getElementById('compose-btn').addEventListener('click', () => {
 document.getElementById('compose-cancel').addEventListener('click', () => composeModal.hidden = true);
 composeModal.addEventListener('click', e => { if (e.target === composeModal) composeModal.hidden = true; });
 
-composeForm.addEventListener('submit', e => {
+composeForm.addEventListener('submit', async e => {
     e.preventDefault();
     const unit = composeForm.elements.to.value;
     const text = composeForm.elements.text.value.trim();
@@ -348,21 +451,22 @@ composeForm.addEventListener('submit', e => {
     }
 
     const tenant = tenants.find(t => t.unit === unit);
-    // Not saved to the database yet: there is no messages table, so this stays in the page.
-    messages.unshift({
-        id: 'out-' + Date.now(),
-        name: tenant.name,
-        unit: tenant.unit,
-        text,
-        file: null,
-        media: [],
-        time: 'Just now',
-        unread: false,
-        outgoing: true,
-    });
+    const sendBtn = composeForm.querySelector('button[type="submit"]');
+    sendBtn.disabled = true;
+    composeError.hidden = true;
 
-    composeModal.hidden = true;
-    renderList();
+    try {
+        // Saved in the database, so it shows up in that tenant's portal
+        await sendMessage({ propertyId: tenant.propertyId, body: text });
+        composeModal.hidden = true;
+        await loadData();
+    } catch (err) {
+        console.error(err);
+        composeError.textContent = 'Could not send: ' + (err.message || err);
+        composeError.hidden = false;
+    } finally {
+        sendBtn.disabled = false;
+    }
 });
 
 // ---------- Global: click outside / Escape ----------
@@ -383,12 +487,20 @@ document.querySelector('.logout-btn')?.addEventListener('click', logout);
 async function loadData() {
     try {
         const [leases, requests] = await Promise.all([listLeases(), listMaintenance()]);
-        // Attachments are optional: messages still load if that query isn't deployed yet
+        // Attachments and messages are optional: the page still loads if those queries aren't deployed yet
         const attachments = await listMaintenanceAttachments().catch(err => {
             console.warn('Could not load attachments:', err);
             return [];
         });
-        buildData(leases, requests, attachments);
+        const all = await listMessages().catch(err => {
+            console.warn('Could not load messages:', err);
+            return [];
+        });
+        const landlordMessages = all
+            .filter(m => m.sender === 'landlord' && m.property)
+            .map(m => ({ id: m.id, body: m.body, sentAt: m.sentAt, propertyId: m.property.id }));
+
+        buildData(leases, requests, attachments, landlordMessages);
         loadError = '';
     } catch (err) {
         console.error(err);

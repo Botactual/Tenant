@@ -142,3 +142,16 @@ mutation CreateMaintenanceAttachment(
     request: { id: $requestId }
   })
 }
+
+# ---------- Messages between landlord and tenant ----------
+mutation CreateMessage(
+  $body: String!
+  $sender: String!
+  $propertyId: UUID!
+) @auth(level: USER) {
+  message_insert(data: {
+    body: $body
+    sender: $sender
+    property: { id: $propertyId }
+  })
+}
