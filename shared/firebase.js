@@ -183,3 +183,6 @@ export async function addMaintenanceAttachments(requestId, list) {
     );
   }
 }
+
+const CLOUDINARY_CLOUD  = "snepjcae";
+const CLOUDINARY_PRESET = "tenconnect";
