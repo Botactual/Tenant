@@ -209,4 +209,3 @@ $('export-btn').addEventListener('click', async () => {
 
 // ---------- Log out ----------
 $('logout-btn').addEventListener('click', logout);
-$('top-logout').addEventListener('click', logout);
