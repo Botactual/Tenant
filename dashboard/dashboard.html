@@ -164,19 +164,25 @@
                 </article>
             </section>
 
-            <!-- ============ BOTTOM ROW: QUICK ACTIONS + RECENT PAYMENTS ============ -->
+            <!-- ============ BOTTOM ROW: RENT COLLECTION + RECENT PAYMENTS ============ -->
             <div class="bottom-row">
 
                 <section class="bottom-panel">
                     <div class="bottom-head">
-                        <h2 class="bottom-title">Quick Actions</h2>
+                        <h2 class="bottom-title"><i data-lucide="layout-grid"></i>Rent Collection</h2>
+                        <a href="../report/report.html" class="view-all">Report →</a>
                     </div>
-                    <div class="qa-grid">
-                        <button type="button" class="qa-btn"><i data-lucide="banknote"></i><span>Record Payment</span></button>
-                        <button type="button" class="qa-btn"><i data-lucide="file-text"></i><span>Add Lease</span></button>
-                        <button type="button" class="qa-btn"><i data-lucide="calendar-clock"></i><span>Lease Extension</span></button>
-                        <button type="button" class="qa-btn"><i data-lucide="file-spreadsheet"></i><span>Generate Report</span></button>
-                        <button type="button" class="qa-btn"><i data-lucide="wrench"></i><span>Maintenance</span></button>
+                    <div class="seg-body">
+                        <div class="seg-top">
+                            <p class="seg-line" id="seg-line">Loading…</p>
+                            <span class="seg-pct" id="seg-pct"></span>
+                        </div>
+                        <div class="seg-bar" id="seg-bar"></div>
+                        <div class="seg-legend">
+                            <span><i class="seg-dot paid"></i>Paid <b id="seg-paid">0</b></span>
+                            <span><i class="seg-dot overdue"></i>Overdue <b id="seg-overdue">0</b></span>
+                            <span><i class="seg-dot vacant"></i>Vacant <b id="seg-vacant">0</b></span>
+                        </div>
                     </div>
                 </section>
 

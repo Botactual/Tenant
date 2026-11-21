@@ -521,6 +521,73 @@ function renderStats(active, paidLeaseIds, month) {
     $id('stat-tenants-badge').textContent = `+${newN} New`;
 }
 
+// ---------- Rent collection unit bar ----------
+const segBar  = $id('seg-bar');
+const segLine = $id('seg-line');
+let segDefault = '';
+
+function renderUnitBar(active, paidLeaseIds) {
+    const byUnit = new Map(active.map(l => [unitOf(l), l]));
+
+    // Units 01..TOTAL_UNITS, plus any higher unit number that has a lease
+    const units = [...new Set([
+        ...Array.from({ length: TOTAL_UNITS }, (_, i) => String(i + 1).padStart(2, '0')),
+        ...byUnit.keys(),
+    ])].filter(u => u !== '--').sort();
+
+    const expected  = sumBy(active, l => Number(l.monthlyRent));
+    const collected = sumBy(active.filter(l => paidLeaseIds.has(l.id)), l => Number(l.monthlyRent));
+    let paidN = 0, overdueN = 0, vacantN = 0;
+
+    segBar.replaceChildren();
+    units.forEach(u => {
+        const lease = byUnit.get(u);
+        const seg = document.createElement('button');
+        seg.type = 'button';
+        seg.textContent = u;
+
+        if (!lease) {
+            seg.className = 'seg vacant';
+            seg.dataset.tip = `Unit ${u} · Vacant`;
+            vacantN++;
+        } else {
+            const paid = paidLeaseIds.has(lease.id);
+            seg.className = 'seg ' + (paid ? 'paid' : 'overdue');
+            seg.dataset.leaseId = lease.id;
+            seg.dataset.tip = `Unit ${u} · ${fullName(lease)} · ${fmtRent(lease.monthlyRent)} · ${paid ? 'Paid' : 'Overdue'}`;
+            if (paid) paidN++; else overdueN++;
+        }
+        seg.setAttribute('aria-label', seg.dataset.tip);
+        segBar.appendChild(seg);
+    });
+
+    segDefault = `${fmtRent(collected)} of ${fmtRent(expected)} collected`;
+    segLine.textContent = segDefault;
+    $id('seg-pct').textContent     = (expected ? Math.round((collected / expected) * 100) : 0) + '%';
+    $id('seg-paid').textContent    = paidN;
+    $id('seg-overdue').textContent = overdueN;
+    $id('seg-vacant').textContent  = vacantN;
+}
+
+// Hovering (or tabbing to) a segment swaps the top line for that unit's details
+const showTip = e => {
+    const seg = e.target.closest('.seg');
+    if (seg) segLine.textContent = seg.dataset.tip;
+};
+const hideTip = () => { segLine.textContent = segDefault; };
+segBar.addEventListener('mouseover', showTip);
+segBar.addEventListener('focusin', showTip);
+segBar.addEventListener('mouseleave', hideTip);
+segBar.addEventListener('focusout', hideTip);
+
+// Clicking a unit opens the same details popup as the table row
+segBar.addEventListener('click', e => {
+    const seg = e.target.closest('.seg[data-lease-id]');
+    if (!seg) return;
+    const row = tbody.querySelector(`[data-lease-id="${seg.dataset.leaseId}"]`);
+    if (row) openDetail(row);
+});
+
 function renderRecentPayments(allLeases, payments) {
     const byId = new Map(allLeases.map(l => [l.id, l]));
     const rows = payments
@@ -647,6 +714,7 @@ async function loadLeases() {
         unitSelect.value = [...unitSelect.options].some(o => o.value === previous) ? previous : 'all';
 
         renderStats(active, paidLeaseIds, month);
+        renderUnitBar(active, paidLeaseIds);
         renderRecentPayments(leases, payments);
         renderNotifications(active, leases, payments, paidLeaseIds);
 

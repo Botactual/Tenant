@@ -212,3 +212,85 @@
     border: none;
     border-radius: 0;
 }
+
+
+/* ---------- Rent collection unit bar ---------- */
+.seg-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+}
+
+.seg-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.seg-line {
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.seg-pct {
+    flex-shrink: 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #b7b9c0;
+}
+
+.seg-bar { display: flex; gap: 4px; }
+
+.seg {
+    flex: 1;
+    min-width: 0;
+    height: 36px;
+    padding: 0;
+    font-family: inherit;
+    font-size: 0.66rem;
+    font-weight: 600;
+    color: #2b2c30;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.seg.paid    { background: #9db89a; }
+.seg.overdue { background: #e99a69; }
+.seg.vacant  {
+    color: #7b7d84;
+    background: #3b3c41;
+    border: 1px dashed #5a5c62;
+    cursor: default;
+}
+
+.seg:not(.vacant):hover,
+.seg:not(.vacant):focus-visible {
+    transform: translateY(-3px);
+    filter: brightness(1.08);
+    outline: none;
+}
+
+.seg-legend {
+    display: flex;
+    gap: 16px;
+    font-size: 0.72rem;
+    color: #b7b9c0;
+}
+
+.seg-legend span { display: flex; align-items: center; gap: 6px; }
+.seg-legend b    { font-weight: 600; color: #ffffff; }
+
+.seg-dot { display: block; width: 9px; height: 9px; border-radius: 3px; }
+.seg-dot.paid    { background: #9db89a; }
+.seg-dot.overdue { background: #e99a69; }
+.seg-dot.vacant  { background: #3b3c41; border: 1px dashed #5a5c62; }

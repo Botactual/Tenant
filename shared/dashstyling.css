@@ -867,6 +867,7 @@ html, body {
 }
 
 /* ---------- Bottom row: Quick Actions + Recent Payments ---------- */
+/* ---------- Bottom row: Quick Actions + Recent Payments ---------- */
 .bottom-row {
     position: absolute;
     top: calc(100% + 14px);                      /* sits in the empty space under the panel */
@@ -874,7 +875,7 @@ html, body {
     width: 100%;
     height: calc(var(--bottom-space) - 30px);
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr calc((100% - 10px) / 2 * 0.75);   /* Recent Payments is 15% narrower */
     gap: 10px;
 }
 
