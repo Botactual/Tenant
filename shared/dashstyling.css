@@ -1242,3 +1242,40 @@ body .msg-inner,
 body .set-inner {
     background-color: var(--panel);
 }
+
+/* ---------- Message attachments (Messages tab) ---------- */
+.msg-thumb { overflow: hidden; }
+.msg-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.detail-media {
+    margin-top: 22px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+}
+.detail-media[hidden] { display: none; }
+
+.media-item {
+    border-radius: 14px;
+    overflow: hidden;
+    background: #2f3034;
+    border: 1px solid #5a5c62;
+}
+.media-item a { display: block; }
+.media-item img,
+.media-item video {
+    display: block;
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    background: #000;
+}
+.media-item video { object-fit: contain; }
+.media-name {
+    padding: 6px 10px;
+    font-size: .72rem;
+    color: #b7b9c0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

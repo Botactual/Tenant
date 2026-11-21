@@ -1,0 +1,15 @@
+rules_version = '2';
+
+// Photos and videos attached to maintenance requests.
+// Only signed-in users can upload (photos/videos under 50 MB) or read. Nobody can edit or delete from the app.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /maintenance/{propertyId}/{fileName} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.size < 50 * 1024 * 1024
+                    && (request.resource.contentType.matches('image/.*')
+                        || request.resource.contentType.matches('video/.*'));
+    }
+  }
+}

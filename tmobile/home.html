@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="tmobile.css">
     <link rel="stylesheet" href="portal.css">
+    <link rel="stylesheet" href="attach.css">
 </head>
 <body class="portal">
 
@@ -61,6 +62,7 @@
                 <span class="d-time" id="d-time"></span>
             </div>
             <p class="d-body" id="d-body"></p>
+            <div class="d-media" id="d-media" hidden></div>
             <div class="steps" id="d-steps" hidden></div>
             <div class="d-card" id="d-rows"></div>
         </section>
@@ -110,7 +112,7 @@
             </button>
             <h2 class="sheet-title">New request</h2>
             <button type="submit" form="compose-form" class="send-btn" id="send-btn">
-                Send
+                <span id="send-label">Send</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>
             </button>
         </div>
@@ -130,6 +132,18 @@
                 <label class="chip"><input type="radio" name="priority" value="medium" checked><span>Medium</span></label>
                 <label class="chip"><input type="radio" name="priority" value="high"><span>High</span></label>
             </div>
+
+            <!-- Photos and videos -->
+            <div class="attach-bar">
+                <button type="button" class="attach-btn" id="attach-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                    Attach photo or video
+                </button>
+                <span class="attach-hint">Up to 5 files, 50 MB each</span>
+                <input type="file" id="attach-input" accept="image/*,video/*" multiple hidden>
+            </div>
+            <ul class="attach-list" id="attach-list"></ul>
+
             <p class="sheet-error" id="compose-error" role="alert"></p>
             <textarea id="c-desc" name="description" placeholder="Describe the problem…"></textarea>
         </form>

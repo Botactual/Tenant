@@ -39,3 +39,14 @@ query ListMaintenanceRequests @auth(level: USER) {
     property { id name }
   }
 }
+
+query ListMaintenanceAttachments @auth(level: USER) {
+  maintenanceAttachments {
+    id
+    fileName
+    fileUrl
+    contentType
+    sizeBytes
+    request { id }
+  }
+}

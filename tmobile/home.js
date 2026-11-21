@@ -1,4 +1,8 @@
-import { auth, unitOf, listLeases, listPayments, listMaintenance, createMaintenanceRequest } from "../shared/firebase.js";
+import {
+  auth, unitOf, listLeases, listPayments, listMaintenance, listMaintenanceAttachments,
+  createMaintenanceRequest, addMaintenanceAttachments, uploadMaintenanceFile,
+  MAX_ATTACH_BYTES, MAX_ATTACH_FILES,
+} from "../shared/firebase.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
 // ---------- Setup ----------
@@ -25,6 +29,9 @@ const fmtShort = (iso) => {
   if (d.getUTCFullYear() !== now.getFullYear()) opts.year = "numeric";
   return d.toLocaleDateString("en-US", opts);
 };
+const fmtSize = (bytes) => bytes < 1024 * 1024
+  ? Math.max(1, Math.round(bytes / 1024)) + " KB"
+  : (bytes / (1024 * 1024)).toFixed(1) + " MB";
 const daysUntil = (iso) => Math.round((Date.parse(String(iso).slice(0, 10)) - Date.parse(TODAY)) / 86400000);
 
 const svg = (paths) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
@@ -33,6 +40,8 @@ const ICON = {
   check: svg('<path d="M20 6 9 17l-5-5"/>'),
   wrench: svg('<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>'),
   bell: svg('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>'),
+  clip: svg('<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>'),
+  close: svg('<path d="M18 6 6 18M6 6l12 12"/>'),
 };
 
 const FOLDERS = {
@@ -55,6 +64,9 @@ const STATUS_TAG = {
   done:     { text: "Resolved",    cls: "ok" },
 };
 
+// Only real https links are ever used for photos/videos
+const safeUrl = (u) => (/^https:\/\//i.test(u || "") ? u : "");
+
 // ---------- State ----------
 let user = null;
 let me = null;            // the signed-in tenant's lease: { id, propertyId, unit, name, email, address, rent, startISO, endISO }
@@ -74,7 +86,7 @@ function markRead(it) {
 }
 
 // ---------- Build the inbox from the database ----------
-function buildItems(payments, requests) {
+function buildItems(payments, requests, mediaByRequest) {
   const out = [];
   const l = me;
 
@@ -161,6 +173,7 @@ function buildItems(payments, requests) {
       body: r.description || "",
       rows,
       step: key === "done" ? 2 : key === "progress" ? 1 : 0,
+      media: mediaByRequest.get(r.id) || [],   // photos and videos sent with the request
     });
   });
 
@@ -218,6 +231,12 @@ function rowEl(it) {
   li.querySelector(".mail-subject").textContent = it.subject;
   li.querySelector(".mail-preview").textContent = it.preview;
   li.querySelector(".mail-time").textContent = it.time;
+  if (it.media && it.media.length) {
+    const clip = document.createElement("span");
+    clip.className = "mail-clip";
+    clip.innerHTML = ICON.clip;
+    li.querySelector(".mail-side").appendChild(clip);
+  }
   if (it.tag) {
     const t = document.createElement("span");
     t.className = "tag " + it.tag.cls;
@@ -279,6 +298,11 @@ async function loadData() {
   lastLoad = Date.now();
   try {
     const [rawLeases, rawPayments, rawRequests] = await Promise.all([listLeases(), listPayments(), listMaintenance()]);
+    // Attachments are optional: the inbox still loads if that query isn't deployed yet
+    const rawMedia = await listMaintenanceAttachments().catch((err) => {
+      console.warn("Could not load attachments:", err);
+      return [];
+    });
     const email = (user.email || "").trim().toLowerCase();
     const mine = rawLeases.find((l) => !l.tenant.isArchived && (l.tenant.email || "").trim().toLowerCase() === email);
 
@@ -308,7 +332,17 @@ async function loadData() {
           paid: String(p.status).toLowerCase() === "paid",
         }));
       const requests = rawRequests.filter((r) => r.property && r.property.id === mine.property.id);
-      items = buildItems(payments, requests);
+
+      // request id -> its photos and videos
+      const mediaByRequest = new Map();
+      rawMedia.forEach((a) => {
+        const id = a.request && a.request.id;
+        if (!id) return;
+        if (!mediaByRequest.has(id)) mediaByRequest.set(id, []);
+        mediaByRequest.get(id).push({ name: a.fileName, url: a.fileUrl, type: a.contentType });
+      });
+
+      items = buildItems(payments, requests, mediaByRequest);
     }
     loadError = "";
   } catch (err) {
@@ -329,6 +363,30 @@ function showDetail(on) {
   if (on) window.scrollTo(0, 0);
 }
 
+// One photo (tap to open full size) or video (with controls)
+function mediaNode(m) {
+  const url = safeUrl(m.url);
+  if (!url) return null;
+  if (/^video\//i.test(m.type || "")) {
+    const v = document.createElement("video");
+    v.src = url;
+    v.controls = true;
+    v.playsInline = true;
+    v.preload = "metadata";
+    return v;
+  }
+  const a = document.createElement("a");
+  a.href = url;
+  a.target = "_blank";
+  a.rel = "noopener";
+  const img = document.createElement("img");
+  img.src = url;
+  img.alt = m.name || "Photo";
+  img.loading = "lazy";
+  a.appendChild(img);
+  return a;
+}
+
 function openItem(id) {
   const it = items.find((x) => x.id === id);
   if (!it) return;
@@ -340,6 +398,14 @@ function openItem(id) {
   $("d-from").textContent = it.from;
   $("d-time").textContent = it.time;
   $("d-body").textContent = it.body;
+
+  const mediaBox = $("d-media");
+  mediaBox.innerHTML = "";
+  (it.media || []).forEach((m) => {
+    const node = mediaNode(m);
+    if (node) mediaBox.appendChild(node);
+  });
+  mediaBox.hidden = !mediaBox.children.length;
 
   const tag = $("d-tag");
   tag.hidden = !it.tag;
@@ -432,12 +498,88 @@ const sheet = $("compose-sheet");
 const form = $("compose-form");
 const formError = $("compose-error");
 const sendBtn = $("send-btn");
+const attachInput = $("attach-input");
+
+let picked = [];        // the photos/videos chosen for this request (File objects)
+let previewUrls = [];   // temporary preview links, released when the list is redrawn
 
 function showFormError(msg) { formError.textContent = msg; }
 function closeSheet() { sheet.hidden = true; }
+function setSending(text) { $("send-label").textContent = text; }
+
+// Draws the chosen files under the Attach button, each with a small preview and a remove button
+function renderPicked() {
+  previewUrls.forEach((u) => URL.revokeObjectURL(u));
+  previewUrls = [];
+  const list = $("attach-list");
+  list.innerHTML = "";
+
+  picked.forEach((f, i) => {
+    const url = URL.createObjectURL(f);
+    previewUrls.push(url);
+    const isVideo = f.type.startsWith("video/");
+
+    const li = document.createElement("li");
+    li.className = "attach-item";
+
+    const thumb = document.createElement(isVideo ? "video" : "img");
+    thumb.className = "attach-thumb";
+    if (isVideo) {
+      thumb.src = url + "#t=0.1";       // shows the first frame
+      thumb.muted = true;
+      thumb.playsInline = true;
+      thumb.preload = "metadata";
+    } else {
+      thumb.src = url;
+      thumb.alt = "";
+    }
+
+    const meta = document.createElement("div");
+    meta.className = "attach-meta";
+    const name = document.createElement("div");
+    name.className = "attach-name";
+    name.textContent = f.name;
+    const size = document.createElement("div");
+    size.className = "attach-size";
+    size.textContent = (isVideo ? "Video · " : "Photo · ") + fmtSize(f.size);
+    meta.append(name, size);
+
+    const rm = document.createElement("button");
+    rm.type = "button";
+    rm.className = "icon-btn small attach-remove";
+    rm.setAttribute("aria-label", "Remove " + f.name);
+    rm.innerHTML = ICON.close;
+    rm.addEventListener("click", () => {
+      picked.splice(i, 1);
+      renderPicked();
+      showFormError("");
+    });
+
+    li.append(thumb, meta, rm);
+    list.appendChild(li);
+  });
+}
+
+$("attach-btn").addEventListener("click", () => attachInput.click());
+
+attachInput.addEventListener("change", () => {
+  const files = [...attachInput.files];
+  attachInput.value = "";               // so the same file can be picked again later
+  let error = "";
+  files.forEach((f) => {
+    if (!/^(image|video)\//.test(f.type)) { error = `${f.name} is not a photo or video.`; return; }
+    if (f.size > MAX_ATTACH_BYTES) { error = `${f.name} is larger than ${MAX_ATTACH_BYTES / (1024 * 1024)} MB.`; return; }
+    if (picked.length >= MAX_ATTACH_FILES) { error = `You can attach up to ${MAX_ATTACH_FILES} files.`; return; }
+    picked.push(f);
+  });
+  renderPicked();
+  showFormError(error);
+});
 
 $("compose-btn").addEventListener("click", () => {
   form.reset();
+  picked = [];
+  renderPicked();
   showFormError("");
   sheet.hidden = false;
   history.pushState({ v: "sheet" }, "");
@@ -455,16 +597,39 @@ form.addEventListener("submit", async (e) => {
   if (!description) return showFormError("Describe the problem so your landlord knows what to fix.");
 
   sendBtn.disabled = true;
+  $("compose-close").disabled = true;
+  showFormError("");
+  let attachFailed = false;
   try {
-    await createMaintenanceRequest({ title, description, priorityLevel: d.priority, propertyId: me.propertyId });
+    // 1) Upload the photos/videos first, so nothing is sent if an upload fails
+    const uploaded = [];
+    for (let i = 0; i < picked.length; i++) {
+      const n = picked.length;
+      setSending(`Uploading ${i + 1}/${n}…`);
+      uploaded.push(await uploadMaintenanceFile(picked[i], me.propertyId,
+        (p) => setSending(`Uploading ${i + 1}/${n} · ${Math.round(p * 100)}%`)));
+    }
+
+    // 2) Send the request itself
+    setSending("Sending…");
+    const requestId = await createMaintenanceRequest({ title, description, priorityLevel: d.priority, propertyId: me.propertyId });
+
+    // 3) Link the uploaded files to it
+    if (uploaded.length) {
+      try { await addMaintenanceAttachments(requestId, uploaded); }
+      catch (err) { console.error(err); attachFailed = true; }
+    }
+
     history.back();                         // closes the sheet
-    toast("Request sent to your landlord");
+    toast(attachFailed ? "Request sent, but the attachments could not be saved" : "Request sent to your landlord");
     await loadData();                       // so it shows up in the inbox
   } catch (err) {
     console.error(err);
     showFormError("Could not send: " + (err.message || err));
   } finally {
     sendBtn.disabled = false;
+    $("compose-close").disabled = false;
+    setSending("Send");
   }
 });
 

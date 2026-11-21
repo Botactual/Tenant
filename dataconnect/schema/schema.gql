@@ -41,3 +41,13 @@ type MaintenanceRequest @table {
   resolutionDate: Date
   property: Property!
 }
+
+# Photos and videos a tenant attaches to a maintenance request.
+# The file itself lives in Firebase Storage; this row keeps its link.
+type MaintenanceAttachment @table {
+  fileName: String!
+  fileUrl: String!
+  contentType: String!
+  sizeBytes: Int
+  request: MaintenanceRequest!
+}

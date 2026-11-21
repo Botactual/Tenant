@@ -125,3 +125,20 @@ mutation UpdateLease(
     leaseDocumentUrl: $leaseDocumentUrl
   })
 }
+
+# ---------- Photos / videos attached to a maintenance request ----------
+mutation CreateMaintenanceAttachment(
+  $fileName: String!
+  $fileUrl: String!
+  $contentType: String!
+  $sizeBytes: Int
+  $requestId: UUID!
+) @auth(level: USER) {
+  maintenanceAttachment_insert(data: {
+    fileName: $fileName
+    fileUrl: $fileUrl
+    contentType: $contentType
+    sizeBytes: $sizeBytes
+    request: { id: $requestId }
+  })
+}

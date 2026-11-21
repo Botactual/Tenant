@@ -1,12 +1,12 @@
-import { requireLogin, logout, listLeases, listMaintenance, unitOf } from '../shared/firebase.js';
+import { requireLogin, logout, listLeases, listMaintenance, listMaintenanceAttachments, unitOf } from '../shared/firebase.js';
 
 lucide.createIcons();
 
 // ---------- Message data ----------
 // Incoming messages are the maintenance requests in the database. Each one is matched to the
-// tenant who leases that property. Messages you send from Compose live only in this session
-// until a messages table exists in the database.
-let messages  = [];   // { id, name, unit, text, file, time, unread, outgoing? }
+// tenant who leases that property, and carries any photos/videos the tenant attached.
+// Messages you send from Compose live only in this session until a messages table exists.
+let messages  = [];   // { id, name, unit, text, file, media, time, unread, outgoing? }
 let tenants   = [];   // recipients for Compose, one per active lease: { unit, name }
 let loadError = '';
 
@@ -25,13 +25,16 @@ const isDone = s => /^(done|resolved|closed|completed)$/i.test(String(s || ''));
 const fmtShort = iso => new Date(String(iso).slice(0, 10) + 'T00:00:00Z').toLocaleDateString('en-US',
     { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
+// Only real https links are ever used for photos/videos
+const safeUrl = u => (/^https:\/\//i.test(u || '') ? u : '');
+
 function timeLabel(r) {
     if (isDone(r.status)) return r.resolutionDate ? 'Resolved ' + fmtShort(r.resolutionDate) : 'Resolved';
     const key = String(r.status || '').toLowerCase();
     return STATUS_LABEL[key] || r.status || 'Open';
 }
 
-function buildData(leases, requests) {
+function buildData(leases, requests, attachments) {
     const active = leases.filter(l => !l.tenant.isArchived);
 
     tenants = active
@@ -45,15 +48,26 @@ function buildData(leases, requests) {
         if (!cur || (cur.tenant.isArchived && !l.tenant.isArchived)) byProperty.set(l.property.id, l);
     });
 
+    // request id -> its photos and videos
+    const mediaByRequest = new Map();
+    attachments.forEach(a => {
+        const id = a.request && a.request.id;
+        if (!id) return;
+        if (!mediaByRequest.has(id)) mediaByRequest.set(id, []);
+        mediaByRequest.get(id).push({ name: a.fileName, url: a.fileUrl, type: a.contentType });
+    });
+
     const incoming = requests.map(r => {
         const lease = byProperty.get(r.property?.id);
         const done = isDone(r.status);
+        const media = mediaByRequest.get(r.id) || [];
         return {
             id: r.id,
             name: lease ? `${lease.tenant.firstName} ${lease.tenant.lastName}` : (r.property?.name || 'Unknown tenant'),
             unit: unitOf(r),
             text: r.description ? `${r.title} — ${r.description}` : r.title,
-            file: null,   // no attachment field in the database yet
+            file: media.length ? media[0].name : null,
+            media,
             time: timeLabel(r),
             unread: !done && !readIds.has(r.id),
             done,
@@ -84,10 +98,11 @@ const searchEl   = document.getElementById('msg-search');
 function visibleMessages() {
     const q = state.query.trim().toLowerCase();
     return messages.filter(m => {
+        const media = m.media || [];
         if (state.filter === 'unread' && !m.unread) return false;
-        if (state.filter === 'files' && !m.file) return false;
+        if (state.filter === 'files' && !media.length) return false;
         if (!q) return true;
-        return [m.name, 'unit ' + m.unit, m.text, m.file || ''].join(' ').toLowerCase().includes(q);
+        return [m.name, 'unit ' + m.unit, m.text, ...media.map(x => x.name)].join(' ').toLowerCase().includes(q);
     });
 }
 
@@ -115,9 +130,30 @@ function rowEl(m) {
     li.querySelector('.msg-unit').textContent = 'Unit ' + m.unit;
     li.querySelector('.msg-text').textContent = m.text;
     li.querySelector('.msg-time').textContent = m.time;
-    if (m.file) {
+
+    const media = m.media || [];
+    if (media.length) {
         li.querySelector('.msg-attach').hidden = false;
-        li.querySelector('.msg-file span').textContent = m.file;
+
+        // Thumbnail of the first attachment: the photo itself, or a video icon
+        const first = media[0];
+        const thumb = li.querySelector('.msg-thumb');
+        thumb.replaceChildren();
+        const url = safeUrl(first.url);
+        if (url && /^image\//i.test(first.type || '')) {
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = '';
+            img.loading = 'lazy';
+            thumb.appendChild(img);
+        } else {
+            const icon = document.createElement('i');
+            icon.setAttribute('data-lucide', /^video\//i.test(first.type || '') ? 'video' : 'file');
+            thumb.appendChild(icon);
+        }
+
+        li.querySelector('.msg-file span').textContent =
+            first.name + (media.length > 1 ? ` +${media.length - 1} more` : '');
     }
     return li;
 }
@@ -133,6 +169,40 @@ function renderList() {
 }
 
 // ---------- Open / close a message ----------
+// One photo (click to open full size) or video (with controls), with its file name underneath
+function mediaNode(x) {
+    const url = safeUrl(x.url);
+    if (!url) return null;
+
+    const box = document.createElement('div');
+    box.className = 'media-item';
+
+    if (/^video\//i.test(x.type || '')) {
+        const v = document.createElement('video');
+        v.src = url;
+        v.controls = true;
+        v.preload = 'metadata';
+        box.appendChild(v);
+    } else {
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = x.name || 'Photo';
+        img.loading = 'lazy';
+        a.appendChild(img);
+        box.appendChild(a);
+    }
+
+    const cap = document.createElement('p');
+    cap.className = 'media-name';
+    cap.textContent = x.name || '';
+    box.appendChild(cap);
+    return box;
+}
+
 function openMessage(id) {
     const m = messages.find(x => String(x.id) === String(id));
     if (!m) return;
@@ -145,9 +215,13 @@ function openMessage(id) {
     document.getElementById('detail-time').textContent = m.time;
     document.getElementById('detail-text').textContent = m.text;
 
-    const attach = document.getElementById('detail-attach');
-    attach.hidden = !m.file;
-    document.getElementById('detail-file').textContent = m.file || '';
+    const mediaBox = document.getElementById('detail-media');
+    mediaBox.replaceChildren();
+    (m.media || []).forEach(x => {
+        const node = mediaNode(x);
+        if (node) mediaBox.appendChild(node);
+    });
+    mediaBox.hidden = !mediaBox.children.length;
 
     listView.hidden = true;
     detailView.hidden = false;
@@ -155,6 +229,8 @@ function openMessage(id) {
 }
 
 document.getElementById('back-btn').addEventListener('click', () => {
+    // stop any video that is still playing
+    document.querySelectorAll('#detail-media video').forEach(v => v.pause());
     detailView.hidden = true;
     listView.hidden = false;
     renderList();
@@ -279,6 +355,7 @@ composeForm.addEventListener('submit', e => {
         unit: tenant.unit,
         text,
         file: null,
+        media: [],
         time: 'Just now',
         unread: false,
         outgoing: true,
@@ -306,7 +383,12 @@ document.querySelector('.logout-btn')?.addEventListener('click', logout);
 async function loadData() {
     try {
         const [leases, requests] = await Promise.all([listLeases(), listMaintenance()]);
-        buildData(leases, requests);
+        // Attachments are optional: messages still load if that query isn't deployed yet
+        const attachments = await listMaintenanceAttachments().catch(err => {
+            console.warn('Could not load attachments:', err);
+            return [];
+        });
+        buildData(leases, requests, attachments);
         loadError = '';
     } catch (err) {
         console.error(err);
