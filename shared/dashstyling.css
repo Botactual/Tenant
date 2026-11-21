@@ -1,7 +1,7 @@
-/* Outer panel colour used behind every page's content (darker than before: was #3F3F43) */
+/* Outer panel colour used behind every page's content (darker than the original #3F3F43) */
 :root {
-    --foundation: #333438;
-    --panel: #37383c;          /* the outlined panel on top of it (was #404245) */
+    --foundation: #2f3034;
+    --panel: #333438;          /* the outlined panel on top of it (was #404245) */
 }
 
 body {
