@@ -5,13 +5,10 @@ import {
 
 lucide.createIcons();
 
-// ---------- Message data ----------
-// Incoming messages are the maintenance requests in the database. Each one is matched to the
-// tenant who leases that property, and carries any photos/videos the tenant attached.
-// Messages you send (Compose or Reply) are saved in the database and show up in the tenant portal.
-let messages  = [];   // { id, propertyId, name, unit, text, file, media, time, unread, outgoing? }
-let tenants   = [];   // recipients for Compose, one per active lease: { unit, name, propertyId }
-let sent      = [];   // landlord messages from the database: { id, body, sentAt, propertyId }
+
+let messages  = [];   
+let tenants   = [];  
+let sent      = [];   
 let loadError = '';
 
 // Which complaints this browser has already opened (the database has no read/unread field)
